@@ -1,16 +1,35 @@
-## Hi there 👋
+<div align="center">
 
-<!--
-**s-actom/s-actom** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+# Expeditus
 
-Here are some ideas to get you started:
+**BUILD · EXECUTE · IMPROVE**
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+Web applications · Automation · Practical software
+
+</div>
+
+---
+
+## About
+
+I build web applications and tools, with an emphasis on clear interfaces and practical workflows. This profile brings together my work and technical interests under the Expeditus identity.
+
+## Technical focus
+
+- **Web development:** TypeScript, JavaScript and CSS.
+- **Tooling:** Python and workflow automation.
+- **Working approach:** iterative development, code review and continuous improvement.
+
+## Portfolio
+
+My application repositories are private. Project details and source code are shared only where disclosure is permitted.
+
+Public work will be featured here when available.
+
+---
+
+<div align="center">
+
+**Expeditus** · [GitHub](https://github.com/s-actom)
+
+</div>
