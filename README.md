@@ -4,7 +4,7 @@
 
 **BUILD · EXECUTE · IMPROVE**
 
-Web applications · Automation · Practical software
+Web applications · Automation · Application security
 
 </div>
 
@@ -19,6 +19,10 @@ I build web applications and tools, with an emphasis on clear interfaces and pra
 - **Web development:** TypeScript, JavaScript and CSS.
 - **Tooling:** Python and workflow automation.
 - **Working approach:** iterative development, code review and continuous improvement.
+
+## Security mindset
+
+I approach security as part of everyday development, with a focus on code review, access control, input validation and protecting sensitive data. I value reproducible findings, tested fixes and clear documentation of remaining risks.
 
 ## Portfolio
 
