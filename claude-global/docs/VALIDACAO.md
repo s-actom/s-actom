@@ -5,9 +5,11 @@
 Corre local e no CI. Verifica:
 
 1. **JSON válido** — `settings.json`, `launch.json`, `mcp-configs/mcp-servers.json`, `hooks/package.json`
-2. **Estrutura mínima de `equipas/equipas.yaml`** — chaves `versao:`, `camadas:`, `direcao_geral:`
-3. **Frontmatter das 16 skills** — todas `skills/*/SKILL.md` com `name:` e `description:` (mínimo 16)
-4. **Segredos** — grep de padrões reais (ghp_/gho_/github_pat_/sk-…/AKIA/PEM) excluindo linhas anotadas `// gitleaks:allow`; e gitleaks completo se instalado
+2. **Estrutura mínima de `equipas/equipas.yaml`** — `versao:`, `camadas:`, `direcao_geral:`
+3. **Frontmatter das 16 skills** — todas `skills/*/SKILL.md` com `name:` e `description:`
+4. **Segredos** — padrões reais (ghp_/gho_/PAT/sk-/AKIA/PEM), excluindo linhas `gitleaks:allow`.
+   O relatório é privado (`mktemp` 0600, apagado no fim) e **nunca imprime o valor**
+   encontrado — só ficheiro, linha e contagem. Mais gitleaks completo, se instalado.
 5. **Higiene** — zero `.bak*`, `__pycache__`, `.DS_Store`, `*.log`, `.env`
 6. **Limites de tamanho** — nenhum ficheiro >1,5 MB
 
@@ -15,31 +17,63 @@ Corre local e no CI. Verifica:
 bash claude-global/validar.sh   # exit 0 = tudo PASS
 ```
 
-## Suites de testes executadas (snapshot 2026-11-14, todas verdes)
+## Cobertura real do CI
 
-| Suite | Comando | Resultado |
+| Suite | No CI | Notas |
 |---|---|---|
-| Hooks da Direção Geral (CI) | idem, com `skip` documentado do teste interativo `fase-2.sh` (pty do runner ≠ terminal do dono) | **53/53 + 1 skip** |
-| Hooks da Direção Geral (local) | `node --test tests/hooks.test.mjs tests/fase2.test.mjs tests/recurso.test.mjs` | **54/54 pass** |
-| context-handoff | `node --test hooks/context-handoff.test.js` | **29/29 pass** |
-| Gerador de equipas | `PYTHONPATH=. python3 -m unittest discover -s tests` | **117 OK** |
-| Guarda de equipas | `bash tests/test-guarda-equipa.sh` | **189 verificações OK** |
-| Guarda de sessão | `bash tests/test-guarda-sessao.sh` | **52 verificações OK** |
-| Rede VibeSec | `bash tests/test-rede-vibesec.sh` | **OK** |
-| Integração de hooks | `bash tests/test-integracao.sh` | **OK** |
-| Reversão Fase 1 | `bash reverter/testes/test-fase-1.sh` | **OK local** (constrói HOME a partir do `~/.claude` real; no CI não corre — o runner não tem sistema local) |
-| Fase 0 (A/B) | `bash testes-fase-0/teste-ab.sh` | **PASS** |
-| Wrapper CodeRabbit | `bash scripts/coderabbit-review.test.sh` | **PASS** (CLI falsa, sem rede; em CI o ficheiro global é copiado/criado em `$HOME`) |
-| gitleaks 8.30.0 | `gitleaks detect --no-git` | **0 leaks** (6 fixtures anotadas) |
+| `validar.sh` | ✅ | |
+| `equipas/hooks/tests/{hooks,fase2,recurso}.test.mjs` | ✅ | 54 testes |
+| `equipas/hooks/tests/portao-modo.test.mjs` | ✅ | 7 testes — contrato do modo do JEV |
+| `hooks/context-handoff.test.js` | ✅ | 29 testes |
+| `hooks/claude-security-stop-hook.test.mjs` | ✅ | 3 testes — recusa delimitada ao turno |
+| `equipas/gerador/tests` (unittest) | ✅ | 117 testes |
+| `test-guarda-equipa.sh` | ✅ | 189 verificações |
+| `test-guarda-sessao.sh` | ✅ | 52 verificações |
+| `test-rede-vibesec.sh` | ✅ | |
+| `test-ligar-guarda-sessao.sh` | ✅ | |
+| `equipas/reverter/testes/test-reverter-integridade.sh` | ✅ | 8 verificações — integridade do rollback |
+| `scripts/coderabbit-review.test.sh` | ✅ | HOME isolado; já não depende da máquina |
+| `test-integracao.sh` | ❌ | exige `claude -p` real (~0,10 USD) e HOME autenticado |
+| `testes-fase-0/teste-ab.sh` | ❌ | exige `claude -p` real e HOME autenticado |
+| `testes-fase-0/teste-c-jev.sh` | ❌ | exige `sandbox-exec` (macOS) e o router em `~/.codex` |
+| `reverter/testes/test-fase-1.sh` | ❌ | constrói um HOME a partir do `~/.claude` real da máquina |
 
-## CI (`.github/workflows/validacao.yml`)
+As quatro excluídas são **testes de integração com o ambiente real**: não são
+executáveis num runner limpo sem custo/credenciais. Correm à mão, na máquina do dono:
 
-Em cada PR/push: `validar.sh` + suites node/python + gitleaks-action.
-O CodeRabbit revê o PR segundo `.coderabbit.yaml` (na raiz do repo).
+```bash
+bash equipas/hooks/tests/test-integracao.sh        # ~0,10 USD
+bash equipas/testes-fase-0/teste-ab.sh
+bash equipas/testes-fase-0/teste-c-jev.sh
+bash equipas/reverter/testes/test-fase-1.sh
+```
+
+## Resultados (2026-11-14, máquina do dono)
+
+| Suite | Resultado |
+|---|---|
+| hooks da Direção Geral | **54/54 pass** |
+| contrato do modo do JEV | **7/7 pass** (verificado por mutação) |
+| context-handoff | **29/29 pass** |
+| hook Claude Security | **3/3 pass** (verificado por mutação) |
+| gerador de equipas | **117 OK** |
+| guarda de equipas / sessão / VibeSec | **189 / 52 / OK** |
+| integridade do rollback | **8/8 OK** (verificado por mutação) |
+| wrapper CodeRabbit | **PASS** |
+| `validar.sh` | **PASS — 489 ficheiros, 0 falhas** |
+| gitleaks 8.30.0 | **0 leaks** |
+
+## Verificação por mutação
+
+Cada correção de bug foi provada em dois sentidos: o teste passa com a correção e
+**falha** quando o comportamento antigo é reintroduzido. Feito para:
+modo do JEV (`portao.mjs`), integridade do rollback (`reverter-fase-1.sh`, 2 casos)
+e delimitação da recusa ao turno (`claude-security-stop-hook.mjs`).
 
 ## Falsos positivos anotados
 
-As linhas com `// gitleaks:allow` em `equipas/hooks/tests/*.test.mjs` contêm
-**fixtures sintéticas** (ex.: `ghp_AbCd…`, JWT de exemplo do jwt.io) usadas
-pelos testes que verificam que o sistema **redige** segredos do registo.
-Nenhum valor real.
+Linhas com `// gitleaks:allow` em `equipas/hooks/tests/*.test.mjs` contêm **fixtures
+sintéticas** (`ghp_AbCd…`, JWT de exemplo do jwt.io) usadas pelos testes que verificam
+que o sistema **redige** segredos. Os headers PEM em
+`agents/security/senior-secops-engineer.md` são **documentação de padrões** a detetar,
+sem corpo de chave. Nenhum valor real.

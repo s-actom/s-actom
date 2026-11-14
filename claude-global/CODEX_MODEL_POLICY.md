@@ -31,8 +31,9 @@ Usar o valor encontrado como override no `codex exec`.
 ## Override no Comando
 
 ```bash
+# O override de modelo é explícito e nunca se omite (sem ele o router interno decide).
 codex exec \
-  -c model='"MODELO_ATUAL"' \        # <- override explícito, nunca omitir
+  -c model='"MODELO_ATUAL"' \
   -c model_reasoning_effort='"xhigh"' \
   --sandbox read-only \
   --ephemeral \

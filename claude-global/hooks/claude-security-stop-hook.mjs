@@ -486,7 +486,8 @@ for (const root of roots) {
 }
 const allReportsValid = roots.length > 0 && roots.every((root) => reports.get(root));
 
-if (allReportsValid || explicitRefusal(transcript) || ownerQuestion(assistantMessage)) process.exit(0);
+// A recusa só conta dentro do turno atual: uma recusa dada noutra tarefa não encerra este gate.
+if (allReportsValid || explicitRefusal(turn.records) || ownerQuestion(assistantMessage)) process.exit(0);
 
 const reason = blockingReason(roots, states);
 if (input.stop_hook_active === true) {

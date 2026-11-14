@@ -9,7 +9,7 @@ on:
 jobs:
   validar:
     name: Validar claude-global
-    # macOS: ambiente-alvo do sistema (testes usam paths/sintaxe do darwin, ex.: Library/)
+    # macOS: ambiente-alvo do sistema (paths darwin, `script`/pty, stat -f).
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,35 +33,43 @@ jobs:
         if: hashFiles('claude-global/equipas/hooks/tests/hooks.test.mjs') != ''
         run: cd claude-global/equipas/hooks && node --test tests/hooks.test.mjs tests/fase2.test.mjs tests/recurso.test.mjs
 
+      - name: Testes — contrato do modo do JEV (node)
+        if: hashFiles('claude-global/equipas/hooks/tests/portao-modo.test.mjs') != ''
+        run: cd claude-global/equipas/hooks && node --test tests/portao-modo.test.mjs
+
       - name: Testes — context-handoff (node)
         if: hashFiles('claude-global/hooks/context-handoff.test.js') != ''
         run: cd claude-global && node --test hooks/context-handoff.test.js
+
+      - name: Testes — hook Claude Security (node)
+        if: hashFiles('claude-global/hooks/claude-security-stop-hook.test.mjs') != ''
+        run: cd claude-global && node --test hooks/claude-security-stop-hook.test.mjs
 
       - name: Testes — gerador de equipas (python)
         if: hashFiles('claude-global/equipas/gerador/tests/test_gerar.py') != ''
         run: cd claude-global/equipas/gerador && PYTHONPATH=. python3 -m unittest discover -s tests
 
-      - name: Testes — guardas e reversão (bash)
+      - name: Testes — guardas da Direção Geral (bash)
         if: hashFiles('claude-global/equipas/hooks/tests/test-guarda-equipa.sh') != ''
         run: |
           cd claude-global/equipas/hooks/tests
           bash test-guarda-equipa.sh
           bash test-guarda-sessao.sh
           bash test-rede-vibesec.sh
-          # test-fase-1.sh (reversão) constrói um HOME a partir do ~/.claude real
-          # da máquina — corre localmente, documentado em docs/VALIDACAO.md
+          bash test-ligar-guarda-sessao.sh
+
+      - name: Testes — integridade do rollback (bash)
+        if: hashFiles('claude-global/equipas/reverter/testes/test-reverter-integridade.sh') != ''
+        run: bash claude-global/equipas/reverter/testes/test-reverter-integridade.sh
 
       - name: Testes — wrapper CodeRabbit (bash)
         if: hashFiles('claude-global/scripts/coderabbit-review.test.sh') != ''
-        run: |
-          # o caso "default" espera o ficheiro global em $HOME/.claude/coderabbit/
-          mkdir -p "$HOME/.claude/coderabbit"
-          if [ -f claude-global/coderabbit/review-instructions.md ]; then
-            cp claude-global/coderabbit/review-instructions.md "$HOME/.claude/coderabbit/"
-          else
-            printf '# stub CI (conteúdo real no PR do core)\n' > "$HOME/.claude/coderabbit/review-instructions.md"
-          fi
-          bash claude-global/scripts/coderabbit-review.test.sh
+        run: bash claude-global/scripts/coderabbit-review.test.sh
+
+      # NÃO correm aqui (documentado em claude-global/docs/VALIDACAO.md):
+      #   test-integracao.sh, teste-ab.sh, teste-c-jev.sh — exigem `claude -p` real
+      #   (custo por execução), HOME autenticado e/ou sandbox-exec do macOS.
+      #   test-fase-1.sh — constrói um HOME a partir do ~/.claude real da máquina.
 
   gitleaks:
     name: Análise de segredos (gitleaks)

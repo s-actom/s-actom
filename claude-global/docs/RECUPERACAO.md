@@ -34,9 +34,11 @@ cp ~/.claude/settings.json "$B/" && cp claude-global/settings.json ~/.claude/set
 # 2) um agente específico
 cp claude-global/agents/construcao.md ~/.claude/agents/construcao.md
 
-# 3) as 16 skills da Direção Geral
-for d in direcao-geral equipa-*; do
-  cp -R "claude-global/skills/$d" ~/.claude/skills/
+# 3) as 16 skills da Direção Geral (16 = direcao-geral + 15 equipa-*)
+#    O glob expande-se no diretório das skills; nunca entre aspas.
+for d in claude-global/skills/direcao-geral claude-global/skills/equipa-*; do
+  [ -d "$d" ] || { echo "falta: $d" >&2; continue; }
+  cp -R "$d" ~/.claude/skills/
 done
 
 # 4) hooks de segurança

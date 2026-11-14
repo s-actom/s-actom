@@ -3,7 +3,8 @@
 # Corre num projeto temporário com uma CÓPIA dos hooks e só com as settings desse projeto: não liga nada global.
 # Por omissão tira TYPESAFE_API_KEY do ambiente (o JEV não é chamado). Com --jev, faz 1 chamada real ao JEV
 # (só etiquetas; entradas marcadas teste:true). Deixa o rasto normal do Claude Code em ~/.claude/projects/.
-# Correr: bash ~/.claude/equipas/hooks/tests/test-integracao.sh [--jev]
+# Correr: bash equipas/hooks/tests/test-integracao.sh [--jev]
+# Pré-condições: CLI `claude` no PATH (custa ~0,10 USD) e python3. NÃO corre no CI.
 set -u
 REAL=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)   # ~/.claude/equipas
 COM_JEV=0; [ "${1:-}" = --jev ] && COM_JEV=1
@@ -15,7 +16,20 @@ B="$T/base"; CAN="CANARIO-zx9-$$"
 mkdir -p "$B" "$P/.claude/skills"
 for x in hooks gerador equipas.yaml seguranca.md entradas; do cp -R "$REAL/$x" "$B/"; done
 rm -R -- "$B/hooks/tests"; touch "$B/FASE-1-ATIVA"
-cp -R "$REAL/rascunho/equipa-pesquisa" "$P/.claude/skills/"
+# rascunho/ é estado gerado, nunca versionado. Se faltar, gera-se numa cópia: assim o teste
+# corre a partir do repositório e não só da máquina onde o rascunho já existia.
+RASC="$REAL/rascunho"
+if [ ! -d "$RASC/equipa-pesquisa" ]; then
+  command -v python3 >/dev/null 2>&1 || { echo "PRECONDIÇÃO: python3 em falta para gerar rascunho/" >&2; exit 2; }
+  GR=$(mktemp -d) || exit 2
+  trap 'rm -R -- "$T" "$P" "$GR"' EXIT
+  cp -R "$REAL"/equipas.yaml "$REAL"/seguranca.md "$REAL"/entradas "$REAL"/gerador "$GR"/ 2>/dev/null
+  # exit 1 = a verificação do desenho falhou, MAS os ficheiros são escritos; exigimos só o skill.
+  python3 -I "$GR/gerador/gerar.py" --modo vivo --home "$(mktemp -d)" --saida "$GR" >/dev/null 2>&1 || true
+  RASC="$GR/rascunho"
+fi
+[ -d "$RASC/equipa-pesquisa" ] || { echo "PRECONDIÇÃO: não foi possível obter rascunho/equipa-pesquisa" >&2; exit 2; }
+cp -R "$RASC/equipa-pesquisa" "$P/.claude/skills/"
 NODE=$(command -v node)
 c() { printf '{"type":"command","command":"\\"%s\\" \\"%s\\"","timeout":%s}' "$NODE" "$B/hooks/$1" "$2"; }
 cat >"$P/.claude/settings.json" <<EOF

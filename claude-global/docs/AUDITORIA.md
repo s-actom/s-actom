@@ -65,6 +65,10 @@ A inclusão/exclusão foi decidida com quatro fontes cruzadas:
   `security_warnings_state_*.json` (9), `stats-cache.json`
 - `equipas/` runtime: `backups/` (3,4 MB), `estado/` (472 KB), `rascunho/`,
   `relatorio/`, `registo.jsonl`, `__pycache__`
+- **`equipas/FASE-1-ATIVA`** — marcador de estado (contém o nome do backup local).
+  Versioná-lo faz uma instalação nova acreditar que a Fase 1 está ativa: `ativar-fase-1.sh`
+  sai com 0 sem ativar e `reverter-fase-1.sh` procura um backup que não existe. É criado
+  em runtime por `ativar-fase-1.sh`.
 
 ### Terceiros (reinstaláveis de forma declarativa)
 - **ECC** (`affaan-m/ECC`, MIT): 62 agentes, 94 comandos, 134 scripts, 4 hooks
@@ -101,3 +105,25 @@ do runner não reproduz o terminal do dono; o teste passa localmente).
 | `equipas/entradas/auditoria-itens-2026-11-05.json` (472 KB) | inventário de skills (nome/descrição/uso); 0 emails; "token/secret" só em descrições de skills |
 | `RTK.md`, `launch.json`, `helpers/*` | sem segredos |
 | Grep de padrões reais (ghp_/gho_/sk-/AKIA/PAT/JWT/PEM) | só nas fixtures de teste anotadas |
+
+## Correções da revisão CodeRabbit (2.ª ronda, 2026-11-14)
+
+Findings Major resolvidos, cada um com teste de regressão e verificação por mutação
+onde há comportamento executável:
+
+| Ficheiro | Correção |
+|---|---|
+| `equipas/hooks/portao.mjs` | Em modo `escuras` o JEV **não** revela equipa nem recurso (o ramo do recurso precedia o gate do modo). Extraída `textoDoObjetivo` pura. |
+| `equipas/reverter/reverter-fase-1.sh` | Valida o sha256 da cópia **antes** do `mv`; falha de `rm` deixa a reversão pendente e preserva `instalado.sha256`. |
+| `hooks/claude-security-stop-hook.mjs` | `explicitRefusal` recebe `turn.records`, não o transcript inteiro: recusa de tarefa anterior não encerra o gate atual. |
+| `validar.sh` | Relatório de segredos em `mktemp` 0600 com `trap` de remoção; nunca imprime o valor encontrado. |
+| `equipas/FASE-1-ATIVA` | Removido do snapshot (marcador de runtime). |
+| `docs/RECUPERACAO.md` | Glob das 15 skills expandido em `claude-global/skills/`; antes não restaurava nenhuma. |
+| `CODEX_MODEL_POLICY.md` | Comentário movido para fora da continuação de linha do `codex exec`. |
+| `agents/auditoria.md` | Descreve o limite real da allowlist `Agent(...)` (só na thread principal) e documenta as dependências externas de skills. |
+| `agents/workspace-automation-auditor.md` | Auditoria declarada read-only: proibido alterar ficheiros. |
+| `scripts/coderabbit-review.sh` | `core.quotePath=false`; nome com caracteres de controlo falha em vez de rever outro conjunto; `shasum` falhado bloqueia o dedup. |
+| `scripts/coderabbit-review.test.sh` | HOME isolado no caso `default`: o teste deixou de depender da configuração da máquina. |
+| `scripts/nano-banana-fix-REPORT.md` | Rollback por ficheiro com backup e aviso; `git reset --hard` substituído por `git status` + `git checkout -- <ficheiro>`. |
+| `agents/conteudo.md` | Documenta que `marketing-agent`/`seo-specialist` vêm do catálogo `agency-agents`. |
+| `docs/DEPENDENCIAS.md` | Novo: skills, agentes e programas externos que a instalação de destino precisa. |

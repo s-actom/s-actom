@@ -48,6 +48,26 @@ export function textoProposta(jev, slugs) {
   return [linha1, proposta, "Confirma ou corrige. Se corrigires, escreve numa linha: `JEV: X. Eu: Y. Porquê: Z.`", ARGS].join("\n");
 }
 
+// Texto que o orquestrador vê num objetivo novo. Puro: testável sem rede, sem estado.
+// Contrato: em "escuras" o JEV nunca aparece — nem a equipa nem o recurso. Só o lembrete.
+export function textoDoObjetivo({ modo, decisao, recurso, jev, cat }) {
+  if (modo !== "falar") return LEMBRETE;
+  if (recurso?.ferramenta && decisao?.equipa) {
+    const nome = `${decisao.equipa[0].toUpperCase()}${decisao.equipa.slice(1)}`;
+    return [
+      `Direção Geral: objetivo novo. Equipa ${nome}.`,
+      `Recurso: usa \`${recurso.ferramenta}\` via ToolSearch (URL do pedido; formats.markdown=true; responseMode="full"). Não uses WebFetch nem Bash para isto.`,
+      "Se o utilizador nomeou outra ferramenta, respeita-a.",
+      ARGS
+    ].join("\n");
+  }
+  const texto = textoProposta(jev, new Set((cat ?? []).map((x) => x.slug)));
+  if (recurso && ["contextdev_indisponivel", "sem_ferramenta_pesquisa"].includes(recurso.motivo)) {
+    return `${texto}\nRecurso: indisponível (${recurso.motivo}).`;
+  }
+  return texto;
+}
+
 // Decide equipa e recurso a partir do resultado do JEV. Testável sem rede.
 export function encaminhar(jev, prompt, mapa) {
   const det = detetar(prompt);
@@ -90,21 +110,7 @@ async function main() {
   registar({ ...base, tipo: "objetivo", modo, envelope, jev,
     ...(decisao ? { decisao } : {}),
     ...(recurso ? { recurso: { tipo: recurso.tipo, ferramenta: recurso.ferramenta, motivo: recurso.motivo ?? null } } : {}) });
-  let texto;
-  if (recurso?.ferramenta) {
-    const nome = `${decisao.equipa[0].toUpperCase()}${decisao.equipa.slice(1)}`;
-    texto = [
-      `Direção Geral: objetivo novo. Equipa ${nome}.`,
-      `Recurso: usa \`${recurso.ferramenta}\` via ToolSearch (URL do pedido; formats.markdown=true; responseMode="full"). Não uses WebFetch nem Bash para isto.`,
-      "Se o utilizador nomeou outra ferramenta, respeita-a.",
-      ARGS
-    ].join("\n");
-  } else {
-    texto = modo === "falar" ? textoProposta(jev, new Set(cat.map((x) => x.slug))) : LEMBRETE;
-    if (recurso && ["contextdev_indisponivel", "sem_ferramenta_pesquisa"].includes(recurso.motivo)) {
-      texto += `\nRecurso: indisponível (${recurso.motivo}).`;
-    }
-  }
+  const texto = textoDoObjetivo({ modo, decisao, recurso, jev, cat });
   responder({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: texto } });
 }
 

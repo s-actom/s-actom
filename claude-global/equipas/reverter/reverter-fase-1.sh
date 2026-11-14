@@ -35,8 +35,13 @@ PENDENTE=0
 diz() { echo "  $*"; }
 antes() { awk -v r="./$1" '$2 == r {print $1}' "$B/ANTES.sha256"; }
 depois() { [ -f "$B/DEPOIS.sha256" ] && awk -v r="./$1" '$2 == r {print $1}' "$B/DEPOIS.sha256"; }
-repor_copia() { # cópia atómica do backup, verificada
-  cp -p "$B/ficheiros/$1" "$C/$1.fase1.tmp" && mv "$C/$1.fase1.tmp" "$C/$1" && [ "$(sha "$C/$1")" = "$(antes "$1")" ]
+repor_copia() { # cópia do backup, verificada ANTES de publicar (nunca substitui por lixo)
+  local tmp="$C/$1.fase1.tmp" esperado
+  esperado=$(antes "$1")
+  [ -n "$esperado" ] || return 1
+  cp -p "$B/ficheiros/$1" "$tmp" || return 1
+  [ "$(sha "$tmp")" = "$esperado" ] || { rm -f -- "$tmp"; return 1; }
+  mv -f -- "$tmp" "$C/$1"
 }
 
 # Não deixar o refrescamento em segundo plano escrever enquanto se reverte
@@ -91,7 +96,10 @@ if [ -f "$INST" ]; then
     alvo="$C/skills/$rel"
     [ -e "$alvo" ] || continue
     if [ -f "$alvo" ] && [ ! -L "$alvo" ] && [ "$(sha "$alvo")" = "$h" ]; then
-      [ "$MODO" = aplicar ] && rm -- "$alvo"; n_rm=$((n_rm + 1))
+      if [ "$MODO" = aplicar ]; then
+        if rm -- "$alvo" 2>/dev/null; then n_rm=$((n_rm + 1))
+        else diz "FALHOU a remover: skills/$rel (reversão pendente)"; n_fica=$((n_fica + 1)); PENDENTE=1; fi
+      else n_rm=$((n_rm + 1)); fi
     else diz "fica (mudou depois da instalação): skills/$rel"; n_fica=$((n_fica + 1)); PENDENTE=1; fi
   done <"$INST"
   if [ "$MODO" = aplicar ]; then

@@ -42,10 +42,18 @@ else
 fi
 
 # --- 4. segredos ----------------------------------------------------------
+# O relatório é privado (mktemp) e apagado no fim: nunca fica legível por outros,
+# e nunca imprime o valor encontrado — só ficheiro, linha e tipo.
 PADRAO='ghp_[A-Za-z0-9]{36}|gho_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}|sk-(ant-)?[A-Za-z0-9_-]{32,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY'
-if grep -rEnI "$PADRAO" "$RAIZ" 2>/dev/null | grep -v 'gitleaks:allow' | grep -v '^\./\.git/' > /tmp/validar-segredos.txt; then
-  erro "possível segredo (ver /tmp/validar-segredos.txt):"
-  head -5 /tmp/validar-segredos.txt
+REL_SEGREDOS=$(umask 077; mktemp "${TMPDIR:-/tmp}/validar-segredos.XXXXXX") || REL_SEGREDOS=""
+if [ -n "$REL_SEGREDOS" ]; then
+  trap 'rm -f -- "$REL_SEGREDOS"' EXIT
+fi
+ENCONTRADOS=$(grep -rEnI "$PADRAO" "$RAIZ" 2>/dev/null | grep -v 'gitleaks:allow' | grep -v '^\./\.git/' || true)
+if [ -n "$ENCONTRADOS" ]; then
+  [ -n "$REL_SEGREDOS" ] && printf '%s\n' "$ENCONTRADOS" >"$REL_SEGREDOS"
+  erro "possível segredo em $(printf '%s\n' "$ENCONTRADOS" | grep -c .) linha(s) — valores omitidos de propósito:"
+  printf '%s\n' "$ENCONTRADOS" | head -5 | sed -E 's#^([^:]+:[0-9]+):.*#  \1  (conteúdo não impresso)#'
 else
   ok "sem padrões de segredo (ghp_/gho_/PAT/sk-/AKIA/PEM)"
 fi
