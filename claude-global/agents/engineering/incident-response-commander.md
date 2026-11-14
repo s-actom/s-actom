@@ -143,12 +143,18 @@ Mesmos `$NS`/`$CTX`; confirmar a quota do namespace antes de escalar.
 kubectl --context "$CTX" -n "$NS" scale deployment/<service> --replicas=<target>
 
 # Enable HPA if not active
+# O --max tem de vir da capacidade CONFIRMADA para o serviço: um teto abaixo das
+# réplicas atuais (ex.: --max=20 depois de escalar para 30) faz o HPA reduzir e
+# agravar o incidente. Confirma o valor com o owner antes de o aplicar.
 kubectl --context "$CTX" -n "$NS" autoscale deployment/<service> \
-  --min=3 --max=20 --cpu-percent=70
+  --min=3 --max=<capacidade confirmada> --cpu-percent=70
 ```
 
 ## Verification
 - [ ] Error rate returned to baseline: [dashboard link]
+      # A SLI de correção é a PROPORÇÃO DE SUCESSO na mesma janela, não a de erro:
+      #   success_ratio = 1 - (erros / total)      -> objetivo 99,99% = 0.9999
+      # Medir `erros / total` (0.0001) e comparar com 99,99% compara grandezas trocadas.
 - [ ] Latency p99 within SLO: [dashboard link]
 - [ ] No new alerts firing for 10 minutes
 - [ ] User-facing functionality manually verified

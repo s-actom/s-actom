@@ -98,16 +98,20 @@ echo "[!] Fora de escopo (não sondados): $(wc -l < "$OUT/out-of-scope.txt")"
 echo "=== DNS Resolution & HTTP Probing (só in-scope) ==="
 # Resolve live hosts and probe for HTTP services
 dnsx -l "$OUT/in-scope.txt" -a -resp -silent -o "$OUT/resolved.txt"
+# SEM -follow-redirects: um redirect pode apontar para fora do âmbito e seria seguido
+# antes de qualquer verificação. Registam-se os códigos 3xx e valida-se o destino à mão.
 httpx -l "$OUT/in-scope.txt" -status-code -title -tech-detect \
-  -follow-redirects -silent -o "$OUT/http-services.txt"
+  -no-follow-redirects -silent -o "$OUT/http-services.txt"
 
 echo "=== Port Scanning (Top 1000) ==="
 naabu -list "$OUT/in-scope.txt" -top-ports 1000 \
   -silent -o "$OUT/open-ports.txt"
 
 echo "=== Technology Fingerprinting ==="
-# Identify frameworks, CMS, WAFs — use httpx output (full URLs, not bare hostnames)
-whatweb -i "$OUT/http-services.txt" \
+# Identify frameworks, CMS, WAFs. O http-services.txt tem colunas (status, title, tech):
+# extrair só a URL antes de o passar ao whatweb, que lê cada linha como um alvo.
+awk 'NF{print $1}' "$OUT/http-services.txt" | grep -E '^https?://' > "$OUT/urls.txt"
+whatweb -i "$OUT/urls.txt" \
   --log-json="$OUT/tech-fingerprint.json" --aggression=3
 
 echo "=== Screenshot Capture ==="

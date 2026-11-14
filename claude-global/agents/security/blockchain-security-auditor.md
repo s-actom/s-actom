@@ -167,6 +167,10 @@ contract SecureLending {
         // decimals() devolve o NÚMERO de casas (ex.: 8), não o fator de escala.
         // Dividir por decimals() inflaciona o valor ~10^decimals vezes: usar 10 ** decimals().
         uint256 scale = 10 ** uint256(priceFeed.decimals());
+        // ATENÇÃO ÀS UNIDADES: o resultado fica nas casas de `amount`. Para comparar com
+        // dívida/garantia noutra moeda (ex.: garantia 18 casas vs dívida 6), normaliza as
+        // DUAS ao mesmo número de casas antes da comparação — senão a razão sai 10^12 errada.
+        // Documenta também qual é a moeda de cotação do feed.
         return (amount * uint256(price)) / scale;
     }
 }
@@ -207,6 +211,19 @@ contract SecureLending {
 # Comprehensive Slither audit script
 
 echo "=== Running Slither Static Analysis ==="
+
+# Falha de execução (compilação, configuração) NÃO é "auditoria limpa": distingue-se de
+# "correu e não encontrou nada". 0 = ok; 1 = findings; outros = erro de execução.
+FALHAS=()
+correr() { # correr <nome> <cmd...>
+  local nome=$1; shift
+  "$@" >/dev/null 2>&1; local rc=$?
+  case $rc in
+    0) ;;                                  # correu, sem findings
+    1) echo "[!] $nome: findings (ver JSON)" ;;
+    *) FALHAS+=("$nome (rc=$rc)"); echo "[X] $nome NÃO concluiu (rc=$rc)" ;;
+  esac
+}
 
 # 1. High-confidence detectors — these are almost always real bugs
 slither . --detect reentrancy-eth,reentrancy-no-eth,arbitrary-send-eth,\
@@ -250,6 +267,11 @@ echidna . --contract EchidnaTest \
 --config echidna-config.yaml \
 --test-mode assertion \
 --test-limit 100000
+
+# Se alguma ferramenta não correu, a auditoria está INCOMPLETA: não reportar "limpo".
+if [ ${#FALHAS[@]} -gt 0 ]; then
+  echo "ANÁLISE INCOMPLETA — não concluíram: ${FALHAS[*]}"; exit 2
+fi
 ```
 
 ### Audit Report Template

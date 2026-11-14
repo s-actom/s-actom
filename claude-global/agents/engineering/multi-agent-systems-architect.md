@@ -305,6 +305,8 @@ Each agent should have access to only the tools and data it needs — nothing mo
 
 **Sandboxing**: Code execution agents run in isolated environments. File system access is restricted to designated directories. Network access is allowlisted, not open.
 
+**Schema validation is not injection defense**: a valid JSON string can still carry instructions aimed at the next agent. Keep the untrusted-origin mark on every field that came from external content and never let the next agent treat those fields as instructions. Test with payloads that are valid against the schema.
+
 **Audit log**: Every tool call by every agent is logged with: agent ID, tool name, timestamp, and **redacted** inputs/outputs. Credentials, tokens, API keys and personal data are masked **before** the record is written (never log the raw payload and redact later). Non-negotiable for production systems. Apply access control and a retention policy to the log store, and record only the fields the audit needs.
 
 ### Prompt Injection Defense
@@ -432,6 +434,11 @@ When a 5-agent pipeline produces a wrong answer, the failure could be in any age
 ### Minimum Observability Requirements
 
 **Per agent call, log:**
+
+> Redact `output` **before** writing this record (the same rule as the tool-call audit log):
+> personal data and credentials never reach the log store. `model_id` comes from the runtime —
+> never hard-code a model name here.
+
 ```json
 {
   "trace_id": "uuid (shared across entire pipeline run)",
@@ -445,11 +452,11 @@ When a 5-agent pipeline produces a wrong answer, the failure could be in any age
   "output_tokens": 412,
   "total_cost_usd": 0.0087,
   "input_hash": "sha256 of input (for dedup/cache)",
-  "output": { ... },
+  "output_redacted": { ... },
   "confidence": 0.82,
   "tools_called": ["web_search"],
   "errors": [],
-  "model": "claude-opus-4-6",
+  "model_id": "<id reported by the runtime, never hard-coded>",
   "status": "success | failure | partial | escalated"
 }
 ```
