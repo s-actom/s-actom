@@ -1,0 +1,75 @@
+name: validacao-claude-global
+
+on:
+  pull_request:
+  push:
+    branches: ["main", "claude-global/**"]
+  workflow_dispatch:
+
+jobs:
+  validar:
+    name: Validar claude-global
+    # macOS: ambiente-alvo do sistema (testes usam paths/sintaxe do darwin, ex.: Library/)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Passos condicionais: a série de importação divide o snapshot em PRs
+      # disjuntos; cada passo só corre se os seus ficheiros estiverem presentes.
+
+      - name: Validações (JSON, YAML, frontmatter, segredos, higiene)
+        if: hashFiles('claude-global/settings.json') != ''
+        run: bash claude-global/validar.sh
+
+      - name: Testes — hooks da Direção Geral (node)
+        if: hashFiles('claude-global/equipas/hooks/tests/hooks.test.mjs') != ''
+        run: cd claude-global/equipas/hooks && node --test tests/hooks.test.mjs tests/fase2.test.mjs tests/recurso.test.mjs
+
+      - name: Testes — context-handoff (node)
+        if: hashFiles('claude-global/hooks/context-handoff.test.js') != ''
+        run: cd claude-global && node --test hooks/context-handoff.test.js
+
+      - name: Testes — gerador de equipas (python)
+        if: hashFiles('claude-global/equipas/gerador/tests/test_gerar.py') != ''
+        run: cd claude-global/equipas/gerador && PYTHONPATH=. python3 -m unittest discover -s tests
+
+      - name: Testes — guardas e reversão (bash)
+        if: hashFiles('claude-global/equipas/hooks/tests/test-guarda-equipa.sh') != ''
+        run: |
+          cd claude-global/equipas/hooks/tests
+          bash test-guarda-equipa.sh
+          bash test-guarda-sessao.sh
+          bash test-rede-vibesec.sh
+          # test-fase-1.sh (reversão) constrói um HOME a partir do ~/.claude real
+          # da máquina — corre localmente, documentado em docs/VALIDACAO.md
+
+      - name: Testes — wrapper CodeRabbit (bash)
+        if: hashFiles('claude-global/scripts/coderabbit-review.test.sh') != ''
+        run: |
+          # o caso "default" espera o ficheiro global em $HOME/.claude/coderabbit/
+          mkdir -p "$HOME/.claude/coderabbit"
+          if [ -f claude-global/coderabbit/review-instructions.md ]; then
+            cp claude-global/coderabbit/review-instructions.md "$HOME/.claude/coderabbit/"
+          else
+            printf '# stub CI (conteúdo real no PR do core)\n' > "$HOME/.claude/coderabbit/review-instructions.md"
+          fi
+          bash claude-global/scripts/coderabbit-review.test.sh
+
+  gitleaks:
+    name: Análise de segredos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
