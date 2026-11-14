@@ -61,6 +61,14 @@ jobs:
         if: hashFiles('claude-global/equipas/reverter/testes/test-reverter-integridade.sh') != ''
         run: bash claude-global/equipas/reverter/testes/test-reverter-integridade.sh
 
+      - name: Guarda dos patches a agentes de terceiros (bash)
+        if: hashFiles('claude-global/testes-agentes.sh') != ''
+        run: bash claude-global/testes-agentes.sh
+
+      - name: Testes — validar.sh (bash)
+        if: hashFiles('claude-global/validar.test.sh') != ''
+        run: bash claude-global/validar.test.sh
+
       - name: Testes — wrapper CodeRabbit (bash)
         if: hashFiles('claude-global/scripts/coderabbit-review.test.sh') != ''
         run: bash claude-global/scripts/coderabbit-review.test.sh
