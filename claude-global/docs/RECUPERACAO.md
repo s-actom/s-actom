@@ -49,6 +49,36 @@ cp claude-global/hooks/claude-security-stop-hook.mjs ~/.claude/hooks/
 rsync -a --exclude='__pycache__' claude-global/equipas/ ~/.claude/equipas/
 ```
 
+## Importante: este snapshot já está no estado PÓS-Fase 1
+
+O `CLAUDE.md` versionado já tem a Direção Geral como único decisor (o cabeçalho
+`## Agentes — Routing` foi substituído). Por isso **não correr `ativar-fase-1.sh`
+sobre uma instalação feita a partir deste snapshot**: o script recusa com código 2
+(`as trocas no CLAUDE.md ou no agency-commander não batem`) e, por desenho,
+**não altera nada** — falha fechada. Isso foi verificado:
+
+| Verificação | Resultado |
+|---|---|
+| `ativar-fase-1.sh --aplicar` sobre o snapshot | código 2, "nada mudou" |
+| `settings.json` depois | idêntico byte a byte |
+| `CLAUDE.md` depois | idêntico byte a byte |
+| skill de terceiros `agency-commander` | intacta |
+
+`ativar-fase-1.sh` / `reverter-fase-1.sh` são ferramentas da **máquina original**
+(usam o backup local `equipas/backups/fase-1-*`, que não é versionado). Numa
+instalação nova, a recuperação é feita por git.
+
+### Pré-condições dos scripts de fase (não satisfeitas numa instalação nova)
+
+- skill `agency-commander` (terceiros, catálogo `agency-agents`) — não versionada;
+- `equipas/rascunho/` com as 16 skills — estado **gerado** (`gerador/gerar.py`), não versionado;
+- `equipas/backups/fase-1-*` com `ANTES.sha256`/`DEPOIS.sha256`/`ficheiros/`/`pares/` — backup local.
+
+O gerador foi validado a produzir o rascunho (17 entradas) a partir desta pasta.
+O comportamento de **rollback** com backup válido está coberto por
+`equipas/reverter/testes/test-reverter-integridade.sh` (8 verificações, inclui
+backup corrompido e remoção falhada).
+
 ## Reverter a Direção Geral (no sistema local)
 
 O sistema tem scripts de reversão testados (ensaio sem `--aplicar`):

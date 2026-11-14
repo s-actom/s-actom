@@ -30,13 +30,13 @@ bash claude-global/validar.sh   # exit 0 = tudo PASS
 | `test-guarda-equipa.sh` | ✅ | 189 verificações |
 | `test-guarda-sessao.sh` | ✅ | 52 verificações |
 | `test-rede-vibesec.sh` | ✅ | |
-| `test-ligar-guarda-sessao.sh` | ✅ | |
 | `equipas/reverter/testes/test-reverter-integridade.sh` | ✅ | 8 verificações — integridade do rollback |
 | `scripts/coderabbit-review.test.sh` | ✅ | HOME isolado; já não depende da máquina |
 | `test-integracao.sh` | ❌ | exige `claude -p` real (~0,10 USD) e HOME autenticado |
 | `testes-fase-0/teste-ab.sh` | ❌ | exige `claude -p` real e HOME autenticado |
 | `testes-fase-0/teste-c-jev.sh` | ❌ | exige `sandbox-exec` (macOS) e o router em `~/.codex` |
 | `reverter/testes/test-fase-1.sh` | ❌ | constrói um HOME a partir do `~/.claude` real da máquina |
+| `reverter/testes/test-ligar-guarda-sessao.sh` | ❌ | idem: precisa do `~/.claude` real |
 
 As quatro excluídas são **testes de integração com o ambiente real**: não são
 executáveis num runner limpo sem custo/credenciais. Correm à mão, na máquina do dono:

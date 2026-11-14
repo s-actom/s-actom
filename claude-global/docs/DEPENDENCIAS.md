@@ -21,6 +21,23 @@ sempre com `claude --debug` numa instalação nova.
 | `superpowers:verification-before-completion` | `agents/auditoria.md` | plugin `superpowers@superpowers-dev` | Não |
 | `automation-audit-ops`, `workspace-surface-audit` | `agents/workspace-automation-auditor.md` | ECC | Não |
 
+## Revisores delegados por `agents/auditoria.md` (sem ficheiro local)
+
+A allowlist de `Agent(...)` em `auditoria.md` nomeia 29 revisores. Deste repositório só
+existem `agents/code-reviewer.md` e `agents/security-reviewer.md`. Os restantes vêm do
+catálogo `agency-agents` instalado no ambiente; sem ele, a delegação falha em silêncio
+(regra geral acima). Nomes afetados:
+
+`typescript-reviewer`, `python-reviewer`, `go-reviewer`, `java-reviewer`, `rust-reviewer`,
+`cpp-reviewer`, `csharp-reviewer`, `kotlin-reviewer`, `swift-reviewer`, `php-reviewer`,
+`fsharp-reviewer`, `flutter-reviewer`, `mle-reviewer`, `healthcare-reviewer`,
+`network-config-reviewer`, `network-troubleshooter`, `database-platform-reviewer`,
+`node-backend-reviewer`, `jvm-enterprise-reviewer`, `quarkus-reviewer`, `fastapi-reviewer`,
+`django-reviewer`, `react-reviewer`, `web-design-reviewer`, `application-security-auditor`,
+`crypto-protocol-auditor`, `silent-failure-hunter`.
+
+Confirmar com `claude --debug` quais resolvem no ambiente de destino.
+
 ## Agentes referenciados mas não definidos aqui
 
 `agents/conteudo.md` permite delegar para `marketing-agent` e `seo-specialist`; nenhum

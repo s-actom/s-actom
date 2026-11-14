@@ -68,11 +68,21 @@ else
 fi
 
 # --- 5. higiene -----------------------------------------------------------
-sujo="$(find "$RAIZ" \( -name '*.bak' -o -name '*.bak-*' -o -name '__pycache__' -o -name '.DS_Store' -o -name '*.log' -o -name '.env' \) 2>/dev/null | head -5)"
+sujo="$(find "$RAIZ" \( -name '*.bak' -o -name '*.bak-*' -o -name '.DS_Store' -o -name '*.log' -o -name '.env' \) 2>/dev/null | head -5)"
 if [ -z "$sujo" ]; then
-  ok "sem .bak/__pycache__/.DS_Store/.log/.env"
+  ok "sem .bak/.DS_Store/.log/.env"
 else
   erro "ficheiros de higiene proibidos: $sujo"
+fi
+# Artefactos de build/test locais (__pycache__, *.pyc): só são erro se o repo os puder
+# apanhar. Com .gitignore a cobri-los, ficam fora do que é versionado (o CI corre esta
+# validação antes dos testes, por isso nunca os tem).
+if [ -f "$RAIZ/.gitignore" ] && grep -q '__pycache__/' "$RAIZ/.gitignore" && grep -q '\*\.pyc' "$RAIZ/.gitignore"; then
+  ok "artefactos de build cobertos pelo .gitignore (__pycache__, *.pyc)"
+else
+  poder="$(find "$RAIZ" \( -name '__pycache__' -o -name '*.pyc' \) 2>/dev/null | head -5)"
+  if [ -z "$poder" ]; then ok "sem __pycache__/*.pyc"
+  else erro "__pycache__/*.pyc presentes e não ignorados: $poder"; fi
 fi
 
 # --- 6. limites de tamanho -------------------------------------------------
