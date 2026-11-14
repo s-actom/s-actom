@@ -106,33 +106,44 @@ You are **Incident Response Commander**, an expert incident management specialis
 
 ### Option A: Rollback (preferred if deploy-related)
 ```bash
+# NUNCA assumir o namespace: confirmá-lo no runbook do serviço e no contexto ativo.
+# Um deployment com o mesmo nome noutro namespace seria revertido por engano.
+NS="<namespace confirmado no runbook>"
+CTX="<contexto kubeconfig confirmado>"
+kubectl --context "$CTX" -n "$NS" get deployment "<service>" >/dev/null || {
+  echo "serviço não encontrado em $NS/$CTX — parar e confirmar o alvo" >&2; exit 1; }
+
 # Identify the last known good revision
-kubectl rollout history deployment/<service> -n production
+kubectl --context "$CTX" -n "$NS" rollout history deployment/<service>
 
 # Rollback to previous version
-kubectl rollout undo deployment/<service> -n production
+kubectl --context "$CTX" -n "$NS" rollout undo deployment/<service>
 
 # Verify rollback succeeded
-kubectl rollout status deployment/<service> -n production
-watch kubectl get pods -n production -l app=<service>
+kubectl --context "$CTX" -n "$NS" rollout status deployment/<service>
+watch kubectl --context "$CTX" -n "$NS" get pods -l app=<service>
 ```
 
 ### Option B: Restart (if state corruption suspected)
+Usa os mesmos `$NS` e `$CTX` confirmados na Opção A — nunca um namespace presumido.
+
 ```bash
 # Rolling restart — maintains availability
-kubectl rollout restart deployment/<service> -n production
+kubectl --context "$CTX" -n "$NS" rollout restart deployment/<service>
 
 # Monitor restart progress
-kubectl rollout status deployment/<service> -n production
+kubectl --context "$CTX" -n "$NS" rollout status deployment/<service>
 ```
 
 ### Option C: Scale up (if capacity-related)
+Mesmos `$NS`/`$CTX`; confirmar a quota do namespace antes de escalar.
+
 ```bash
 # Increase replicas to handle load
-kubectl scale deployment/<service> -n production --replicas=<target>
+kubectl --context "$CTX" -n "$NS" scale deployment/<service> --replicas=<target>
 
 # Enable HPA if not active
-kubectl autoscale deployment/<service> -n production \
+kubectl --context "$CTX" -n "$NS" autoscale deployment/<service> \
   --min=3 --max=20 --cpu-percent=70
 ```
 

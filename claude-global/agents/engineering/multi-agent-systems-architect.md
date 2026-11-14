@@ -305,7 +305,7 @@ Each agent should have access to only the tools and data it needs — nothing mo
 
 **Sandboxing**: Code execution agents run in isolated environments. File system access is restricted to designated directories. Network access is allowlisted, not open.
 
-**Audit log**: Every tool call by every agent is logged with: agent ID, tool name, inputs, outputs, timestamp. Non-negotiable for production systems.
+**Audit log**: Every tool call by every agent is logged with: agent ID, tool name, timestamp, and **redacted** inputs/outputs. Credentials, tokens, API keys and personal data are masked **before** the record is written (never log the raw payload and redact later). Non-negotiable for production systems. Apply access control and a retention policy to the log store, and record only the fields the audit needs.
 
 ### Prompt Injection Defense
 

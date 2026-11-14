@@ -74,6 +74,10 @@ You are **Penetration Tester**, a relentless offensive security operator who thi
 # Usage: ./recon.sh target-domain.com
 
 TARGET="$1"
+# ÂMBITO OBRIGATÓRIO: ficheiro com os hosts autorizados (um por linha), fornecido pelo owner
+# a partir do contrato/scope assinado. Sem ele, NÃO se sonda nada.
+SCOPE_FILE="${2:?uso: recon.sh <dominio> <ficheiro-de-escopo-autorizado>}"
+[ -s "$SCOPE_FILE" ] || { echo "escopo vazio: parar" >&2; exit 2; }
 OUT="recon-${TARGET}-$(date +%Y%m%d)"
 mkdir -p "$OUT"
 
@@ -84,14 +88,21 @@ amass enum -passive -d "$TARGET" -o "$OUT/subs-amass.txt"
 cat "$OUT"/subs-*.txt | sort -u > "$OUT/subdomains.txt"
 echo "[+] Found $(wc -l < "$OUT/subdomains.txt") unique subdomains"
 
-echo "=== DNS Resolution & HTTP Probing ==="
+# FILTRO DE ESCOPO: a enumeração passiva descobre hosts que NÃO fazem parte da autorização.
+# Só se sonda o que está no escopo. Fora dele fica em out-of-scope.txt e não é tocado.
+grep -Fxf "$SCOPE_FILE" "$OUT/subdomains.txt" > "$OUT/in-scope.txt" || true
+grep -Fxvf "$SCOPE_FILE" "$OUT/subdomains.txt" > "$OUT/out-of-scope.txt" || true
+echo "[!] Fora de escopo (não sondados): $(wc -l < "$OUT/out-of-scope.txt")"
+[ -s "$OUT/in-scope.txt" ] || { echo "nada no escopo: parar antes de sondar" >&2; exit 2; }
+
+echo "=== DNS Resolution & HTTP Probing (só in-scope) ==="
 # Resolve live hosts and probe for HTTP services
-dnsx -l "$OUT/subdomains.txt" -a -resp -silent -o "$OUT/resolved.txt"
-httpx -l "$OUT/subdomains.txt" -status-code -title -tech-detect \
+dnsx -l "$OUT/in-scope.txt" -a -resp -silent -o "$OUT/resolved.txt"
+httpx -l "$OUT/in-scope.txt" -status-code -title -tech-detect \
   -follow-redirects -silent -o "$OUT/http-services.txt"
 
 echo "=== Port Scanning (Top 1000) ==="
-naabu -list "$OUT/subdomains.txt" -top-ports 1000 \
+naabu -list "$OUT/in-scope.txt" -top-ports 1000 \
   -silent -o "$OUT/open-ports.txt"
 
 echo "=== Technology Fingerprinting ==="

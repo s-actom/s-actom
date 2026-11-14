@@ -164,7 +164,10 @@ contract SecureLending {
         require(updatedAt > block.timestamp - MAX_ORACLE_STALENESS, "Stale price");
         require(answeredInRound >= roundId, "Incomplete round");
 
-        return (amount * uint256(price)) / priceFeed.decimals();
+        // decimals() devolve o NÚMERO de casas (ex.: 8), não o fator de escala.
+        // Dividir por decimals() inflaciona o valor ~10^decimals vezes: usar 10 ** decimals().
+        uint256 scale = 10 ** uint256(priceFeed.decimals());
+        return (amount * uint256(price)) / scale;
     }
 }
 ```
