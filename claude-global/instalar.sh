@@ -21,6 +21,10 @@ FORCAR=0
 PREFIXO_ORIGEM='/Users/goncaloferro/.claude'
 # O settings.json fixa o node do nvm desta máquina; noutra instalação é inválido.
 # Substitui-se pelo node encontrado no PATH (se existir) e registra-se o que ficou.
+erro() { echo "instalar: $*" >&2; exit 2; }
+ok()   { echo "ok - $*"; }
+aviso(){ echo "aviso - $*" >&2; }
+
 NODE_BIN=$(command -v node 2>/dev/null || true)
 if [ -n "$NODE_BIN" ]; then
   NODE_SED="s|/Users/goncaloferro/.nvm/versions/node/[^\"]*/bin/node|$NODE_BIN|g"
@@ -38,9 +42,21 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-erro() { echo "instalar: $*" >&2; exit 2; }
-ok()   { echo "ok - $*"; }
-aviso(){ echo "aviso - $*" >&2; }
+# Destino ABSOLUTO: um caminho relativo gravaria "staging/hooks/..." na configuração e os
+# hooks falhariam quando correm noutro projeto.
+if [ "$ENSAIO" = 1 ]; then
+  # Ensaiar não escreve: resolve o caminho sem criar nada.
+  case "$DESTINO" in
+    /*) ;;
+    *)  _dir=$(cd "$(dirname "$DESTINO")" 2>/dev/null && pwd -P) || _dir="$PWD"
+        DESTINO="$_dir/$(basename "$DESTINO")" ;;
+  esac
+else
+  mkdir -p "$DESTINO" 2>/dev/null || erro "sem escrita em $DESTINO"
+  DESTINO=$(cd "$DESTINO" 2>/dev/null && pwd -P) || erro "destino inválido"
+fi
+case "$DESTINO" in /*) ;; *) erro "destino não absoluto: $DESTINO" ;; esac
+
 
 # --- 1. dependências exigidas em runtime -----------------------------------
 FALTA=0
@@ -87,7 +103,12 @@ if [ -d "$DESTINO" ]; then
   MAN_ANTIGO="$DESTINO/.claude-global-manifest.sha256"
   for rel in $PLANO; do
     [ -e "$DESTINO/$rel" ] || continue
-    if [ -f "$MAN_ANTIGO" ] && grep -qF "  $rel" "$MAN_ANTIGO"; then continue; fi
+    if [ -f "$MAN_ANTIGO" ] && grep -qF "  $rel" "$MAN_ANTIGO"; then
+      # É nosso, mas se o dono o alterou desde a instalação tem de ser preservado.
+      h_antigo=$(grep -F "  $rel" "$MAN_ANTIGO" | head -1 | cut -d' ' -f1)
+      h_atual=$(shasum -a 256 -- "$DESTINO/$rel" 2>/dev/null | cut -d' ' -f1)
+      [ "$h_antigo" = "$h_atual" ] && continue
+    fi
     mkdir -p "$(dirname "$BK/$rel")"
     cp -p "$DESTINO/$rel" "$BK/$rel" || erro "falha no backup de $rel"
   done
@@ -113,10 +134,8 @@ done
 ok "$NOVOS ficheiros escritos"
 
 # --- 6. manifesto e permissões -------------------------------------------------------
-( cd "$DESTINO" && printf '%s\n' $PLANO | while IFS= read -r rel; do
-    printf '%s  %s\n' "$(shasum -a 256 -- "$rel" | cut -d' ' -f1)" "$rel"
-  done ) > "$DESTINO/.claude-global-manifest.sha256" || erro "falha no manifesto"
-chmod 600 "$DESTINO/.claude-global-manifest.sha256" 2>/dev/null || true
+# O manifesto é escrito no FIM (após o passo 6b, que pode reescrever settings.json),
+# para que os hashes correspondam ao que fica instalado. Ver abaixo.
 ok "manifesto: $DESTINO/.claude-global-manifest.sha256"
 
 # --- 6b. hooks referenciados mas ausentes (dependências externas) ----------------------
@@ -185,6 +204,16 @@ fi
 # O passo 6b pode reescrever o settings.json (os.replace): repor o modo restrito depois.
 [ -f "$DESTINO/settings.json" ] && chmod 600 "$DESTINO/settings.json" 2>/dev/null || true
 [ -f "$DESTINO/.claude-global-hooks-removidos.txt" ] && chmod 600 "$DESTINO/.claude-global-hooks-removidos.txt" 2>/dev/null || true
+
+# --- 6c. manifesto (depois da última escrita em settings.json) ------------------------
+( cd "$DESTINO" && printf '%s\n' $PLANO | while IFS= read -r rel; do
+    [ -e "$rel" ] || continue
+    printf '%s  %s\n' "$(shasum -a 256 -- "$rel" | cut -d' ' -f1)" "$rel"
+  done ) > "$DESTINO/.claude-global-manifest.sha256" || erro "falha no manifesto"
+chmod 600 "$DESTINO/.claude-global-manifest.sha256" 2>/dev/null || true
+# Regista o backup DESTA instalação (o desinstalador restaura este, não o mais antigo).
+[ -n "${BK:-}" ] && printf '%s\n' "$BK" > "$DESTINO/.claude-global-origem" && chmod 600 "$DESTINO/.claude-global-origem" 2>/dev/null || true
+ok "manifesto: $DESTINO/.claude-global-manifest.sha256"
 
 # --- 7. verificações pós-instalação ---------------------------------------------------
 VERMELHO=0

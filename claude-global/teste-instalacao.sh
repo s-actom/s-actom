@@ -19,6 +19,7 @@ bash "$RAIZ/instalar.sh" --destino "$D" --ensaio >/dev/null 2>&1
 [ -d "$D" ] && ko "1) o ensaio criou ficheiros" || ok "1) ensaio não escreve nada"
 
 # --- 2. instalação ---------------------------------------------------------------
+HAVIA_SET=0; [ -f "$D/settings.json" ] && HAVIA_SET=1
 if bash "$RAIZ/instalar.sh" --destino "$D" >"$T/i1.log" 2>&1; then ok "2) instalação termina com 0"
 else ko "2) instalação terminou com erro:"; tail -6 "$T/i1.log"; fi
 
@@ -80,9 +81,15 @@ bash "$RAIZ/desinstalar.sh" --destino "$D" >"$T/d1.log" 2>&1; RC=$?
 [ -f "$D/skills/equipa-do-dono/SKILL.md" ] && ok "9) skill criada pelo dono preservada" || ko "9) apagou skill do dono"
 [ ! -d "$D/skills/equipa-ia" ] && ok "9) skills instaladas removidas" || ko "9) skills instaladas ficaram"
 
-# --- 10. hash final: a instalação restaurada volta ao estado anterior ------------
-[ -f "$D/settings.json" ] && [ "$(sha "$D/settings.json")" = "$ANTES_SET" ] \
-  && ok "10) settings.json restaurado do backup (hash igual)" || ko "10) settings.json não voltou ao estado anterior"
+# --- 10. estado final coerente com o que existia antes da instalação --------------
+# O destino era novo: não havia settings.json antes, logo não deve existir depois.
+if [ "$HAVIA_SET" = 0 ]; then
+  [ ! -f "$D/settings.json" ] && ok "10) instalação limpa: settings.json removido (não havia antes)"
+  absent=$?; [ "$absent" = 0 ] || ko "10) settings.json sobreviveu a uma instalação limpa"
+else
+  [ -f "$D/settings.json" ] && [ "$(sha "$D/settings.json")" = "$ANTES_SET" ] \
+    && ok "10) settings.json restaurado do backup (hash igual)" || ko "10) settings.json não voltou ao estado anterior"
+fi
 
 echo
 if [ "$FALHAS" -eq 0 ]; then echo "TODOS OK"; exit 0; else echo "$FALHAS falha(s)"; exit 1; fi

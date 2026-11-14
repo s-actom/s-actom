@@ -22,8 +22,14 @@ ok()   { echo "ok - $*"; }
 diz()  { echo "  $*"; }
 
 [ -f "$MAN" ] || erro "sem manifesto em $MAN (não foi este script que instalou?)"
-# O backup mais ANTIGO é o estado anterior ao pacote; os seguintes podem ser reinstalações.
-BK=$(ls -d "$DESTINO"/.claude-global-backup-* 2>/dev/null | sort | head -1)
+# O instalador regista o backup da SUA instalação; é esse que se restaura.
+# Fallback: o mais antigo (estado anterior ao pacote).
+if [ -f "$DESTINO/.claude-global-origem" ]; then
+  BK=$(head -1 "$DESTINO/.claude-global-origem")
+  [ -d "$BK" ] || BK=""
+else
+  BK=$(ls -d "$DESTINO"/.claude-global-backup-* 2>/dev/null | sort | head -1)
+fi
 
 PENDENTE=0; n_rm=0; n_fica=0
 while read -r h rel; do
@@ -32,7 +38,9 @@ while read -r h rel; do
   [ -e "$alvo" ] || continue
   atual=$(shasum -a 256 -- "$alvo" 2>/dev/null | cut -d' ' -f1)
   if [ "$atual" = "$h" ]; then
-    if [ "$ENSAIO" = 1 ]; then diz "removeria: $rel"; else rm -f -- "$alvo" && n_rm=$((n_rm + 1)); fi
+    if [ "$ENSAIO" = 1 ]; then diz "removeria: $rel"
+    elif rm -f -- "$alvo" 2>/dev/null; then n_rm=$((n_rm + 1))
+    else diz "FALHOU a remover: $rel"; PENDENTE=1; fi
   else
     diz "fica (mudou depois da instalação): $rel"; n_fica=$((n_fica + 1)); PENDENTE=1
   fi
@@ -42,11 +50,16 @@ if [ -n "${BK:-}" ] && [ -d "$BK" ]; then
   if [ "$ENSAIO" = 1 ]; then diz "restauraria de: $BK"; else
     # Sem clobber: um ficheiro que o dono alterou depois da instalação NÃO pode ser
     # sobrescrito pelo backup. Só se restaura o que já não existe (removido acima).
-    ( cd "$BK" && find . -type f | sed 's|^\./||' ) | while IFS= read -r rel; do
-      mkdir -p "$DESTINO/$(dirname "$rel")"
-      [ -e "$DESTINO/$rel" ] || cp -p "$BK/$rel" "$DESTINO/$rel"
-    done
-    ok "backup restaurado de $BK"
+    FALHOU_RESTAURO=0
+    while IFS= read -r rel; do
+      mkdir -p "$DESTINO/$(dirname "$rel")" 2>/dev/null || { FALHOU_RESTAURO=1; continue; }
+      # Sem clobber: um ficheiro que o dono alterou depois da instalação NÃO pode ser
+      # sobrescrito pelo backup. Só se restaura o que já não existe (removido acima).
+      [ -e "$DESTINO/$rel" ] && continue
+      cp -p "$BK/$rel" "$DESTINO/$rel" 2>/dev/null || FALHOU_RESTAURO=1
+    done < <( cd "$BK" && find . -type f | sed 's|^\./||' )
+    if [ "$FALHOU_RESTAURO" = 0 ]; then ok "backup restaurado de $BK"
+    else diz "ATENÇÃO: houve falhas a restaurar de $BK"; PENDENTE=1; fi
   fi
 else
   diz "sem backup para restaurar"

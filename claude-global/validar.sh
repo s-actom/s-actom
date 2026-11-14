@@ -49,14 +49,49 @@ REL_SEGREDOS=$(umask 077; mktemp "${TMPDIR:-/tmp}/validar-segredos.XXXXXX") || R
 if [ -n "$REL_SEGREDOS" ]; then
   trap 'rm -f -- "$REL_SEGREDOS"' EXIT
 fi
-ENCONTRADOS=$(grep -rEnI "$PADRAO" "$RAIZ" 2>/dev/null | grep -v 'gitleaks:allow' | grep -v '^\./\.git/' || true)
-if [ -n "$ENCONTRADOS" ]; then
-  [ -n "$REL_SEGREDOS" ] && printf '%s\n' "$ENCONTRADOS" >"$REL_SEGREDOS"
-  erro "possível segredo em $(printf '%s\n' "$ENCONTRADOS" | grep -c .) linha(s) — valores omitidos de propósito:"
-  # Greedy até ao ÚLTIMO ":<número>:" — um nome como "credenciais:backup.txt:1:token"
-  # não pode escapar ao mascaramento e imprimir o valor. Se nada casar, não sai a linha.
-  printf '%s\n' "$ENCONTRADOS" | head -5 | sed -E 's#^(.+):([0-9]+):.*#  \1 linha \2  (conteúdo não impresso)#' \
-    | sed -E 's#^(-{0,2}[^ ]*credenciais.*)$#  (ocorrência mascarada)#'
+# Varredura própria em Python: percorre ficheiros e reporta APENAS caminho e linha.
+# Nunca imprime o conteúdo — o `grep` em pipeline não distinguia "path:linha:" de um
+# ":" dentro do caminho ou do conteúdo, e chegou a imprimir o valor no log do CI.
+if [ -n "$REL_SEGREDOS" ]; then
+  NSEC=$(python3 - "$RAIZ" "$PADRAO" "$REL_SEGREDOS" <<'PYSEG'
+import os, re, sys
+raiz, padrao, destino = sys.argv[1], sys.argv[2], sys.argv[3]
+rx = re.compile(padrao)
+IGNORAR_DIR = {".git", "__pycache__", "node_modules", ".venv"}
+IGNORAR_EXT = {".pyc", ".png", ".jpg", ".jpeg", ".gif", ".pdf", ".zip", ".gz", ".db"}
+achados = []
+for base, dirs, ficheiros in os.walk(raiz):
+    dirs[:] = [d for d in dirs if d not in IGNORAR_DIR]
+    for nome in ficheiros:
+        caminho = os.path.join(base, nome)
+        if os.path.splitext(nome)[1].lower() in IGNORAR_EXT:
+            continue
+        try:
+            if os.path.getsize(caminho) > 2_000_000:
+                continue
+            with open(caminho, "r", encoding="utf-8", errors="strict") as fh:
+                linhas = fh.readlines()
+        except (UnicodeDecodeError, OSError):
+            continue  # binário ou ilegível: não é candidato a segredo em texto
+        for numero, linha in enumerate(linhas, 1):
+            if "gitleaks:allow" in linha:
+                continue
+            if rx.search(linha):
+                achados.append((os.path.relpath(caminho, raiz), numero))
+with open(destino, "w", encoding="utf-8") as out:
+    for caminho, numero in achados:
+        out.write(f"{caminho}\t{numero}\n")
+print(len(achados))
+PYSEG
+)
+else
+  NSEC=0
+fi
+if [ "${NSEC:-0}" -gt 0 ] 2>/dev/null; then
+  erro "possível segredo em $NSEC linha(s) — valores omitidos de propósito:"
+  head -5 "$REL_SEGREDOS" | while IFS="$(printf '\t')" read -r caminho numero; do
+    printf '  %s linha %s  (conteúdo não impresso)\n' "$caminho" "$numero"
+  done
 else
   ok "sem padrões de segredo (ghp_/gho_/PAT/sk-/AKIA/PEM)"
 fi

@@ -30,6 +30,11 @@ pm blockchain mcp__helius__heliusWrite; cala blockchain "$(mcp mcp__helius__heli
 # Infraestrutura
 pb infraestrutura 'git push origin main'; pb infraestrutura 'git -C /repo push origin main'; pb infraestrutura 'npx vercel --prod'; pb infraestrutura 'vercel'
 pb infraestrutura 'yarn publish'; pb infraestrutura 'pnpm publish --access public'; pb infraestrutura 'aws lambda update-function-code --function-name f'
+# Regressão (CodeRabbit PR #1): verbos AWS destrutivos além de delete/rm/destroy
+pb infraestrutura 'aws ec2 terminate-instances --instance-ids i-1234567890abcdef0'
+pb infraestrutura 'aws rds delete-db-instance --db-instance-identifier db1'
+cb infraestrutura 'aws s3 ls'
+cb infraestrutura 'aws sts get-caller-identity'
 pb infraestrutura 'gcloud run deploy svc'; pb infraestrutura 'netlify deploy --prod'; pb infraestrutura 'kubectl scale deploy/api --replicas=0'
 pb infraestrutura 'terraform -chdir=infra apply'; pb infraestrutura 'rsync -av dist/ user@host:/var/www'
 pm infraestrutura "$V"__create_deployment; pm infraestrutura "$SB"__execute_sql; pm infraestrutura "$SB"__apply_migration
