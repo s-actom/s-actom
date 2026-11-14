@@ -344,9 +344,9 @@ Source: `~/.claude.json` (global mcpServers). Secrets/tokens NOT read or printed
 - ~/.claude/ tree, ~/.agents/skills, ~/.codex/skills  (read-only)
 
 ## Backups
-- Backup: `/Users/goncaloferro/.claude/backups/anthropic-cybersecurity-skills-install-20260530-105444`
-- Restore script: `/Users/goncaloferro/.claude/backups/anthropic-cybersecurity-skills-install-20260530-105444/RESTORE.sh` (executable; restores skill-router, lists+confirms before removing new items)
-- Pre-state manifest: `/Users/goncaloferro/.claude/backups/anthropic-cybersecurity-skills-install-20260530-105444/PRE_STATE_MANIFEST.md`
+- Backup: `~/.claude/backups/anthropic-cybersecurity-skills-install-20260530-105444`
+- Restore script: `~/.claude/backups/anthropic-cybersecurity-skills-install-20260530-105444/RESTORE.sh` (executable; restores skill-router, lists+confirms before removing new items)
+- Pre-state manifest: `~/.claude/backups/anthropic-cybersecurity-skills-install-20260530-105444/PRE_STATE_MANIFEST.md`
 
 ## Usage Guidance
 

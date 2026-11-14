@@ -3,7 +3,7 @@
 # binding Livro + Flora finish roadmap. Only active inside the livro-proibido-site
 # repository; prints one line with the current roadmap step (first ESTADO row
 # that is not FEITO) and the core rules. Read-only; never fails the prompt.
-REPO=/Users/goncaloferro/repos/livro-proibido-site
+REPO=$HOME/repos/livro-proibido-site
 ROADMAP="$REPO/docs/superpowers/plans/2026-09-25-livro-flora-finish-roadmap.md"
 dir="${CLAUDE_PROJECT_DIR:-$PWD}"
 case "$dir" in
