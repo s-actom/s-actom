@@ -1,0 +1,15 @@
+# CodeRabbit — configuração do repositório s-actom/s-actom
+# Derivada da camada global local (~/.claude/coderabbit/review-instructions.md):
+# foco em bugs, segurança e privacidade; sem nitpicks de estilo.
+language: pt-BR # pt-PT não é código suportado; fallback mais próximo
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: true
+  poem: false
+  path_filters:
+    - "!claude-global/docs/MANIFESTO-incluido.txt" # lista gerada, sem revisão linha a linha
+
+chat:
+  auto_reply: true
