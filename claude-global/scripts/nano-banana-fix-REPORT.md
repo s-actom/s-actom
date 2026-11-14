@@ -66,10 +66,32 @@ mcp__nano-banana-mcp__get_last_image_info
 
 ## Rollback (se preciso)
 
+> **Atenção:** estes backups são de 2026-06-17. Restaurar o ficheiro inteiro desfaz
+> qualquer alteração feita depois dessa data (incluindo configuração de outros
+> projetos). Compara primeiro e repõe **apenas** as entradas alteradas por esta correção.
+
 ```bash
-cp /tmp/claude-json-backup-20260617-152427.json ~/.claude.json
-cp /tmp/settings-local-backup-20260617-152427.json ~/.claude/settings.local.json
-# ou, para a árvore de config: cd ~/.claude && git reset --hard 4932e35
+# 1) Comparar antes de tocar em nada (não substitui ficheiros) e SEM imprimir credenciais:
+#    as chaves (GEMINI_API_KEY, tokens) são substituídas por <<REDACTED>> antes do diff.
+redigir() { sed -E 's/("(GEMINI_API_KEY|ANTHROPIC_API_KEY|OPENAI_API_KEY|[A-Z_]*(TOKEN|SECRET|KEY)[A-Z_]*)"[[:space:]]*:[[:space:]]*")[^"]*"/\1<<REDACTED>>"/g; s/(AIza[0-9A-Za-z_-]{20,})/<<REDACTED>>/g' "$1"; }
+diff -u <(redigir /tmp/claude-json-backup-20260617-152427.json) <(redigir ~/.claude.json) | head -40
+diff -u <(redigir /tmp/settings-local-backup-20260617-152427.json) <(redigir ~/.claude/settings.local.json) | head -40
+
+# 2) Repor só os ficheiros desta correção, guardando o atual ao lado (reversível).
+cp -p ~/.claude.json ~/.claude.json.pre-rollback-$(date +%Y%m%d)
+cp -p /tmp/claude-json-backup-20260617-152427.json ~/.claude.json
+cp -p ~/.claude/settings.local.json ~/.claude/settings.local.json.pre-rollback-$(date +%Y%m%d)
+cp -p /tmp/settings-local-backup-20260617-152427.json ~/.claude/settings.local.json
+```
+
+Para a árvore de config **não** usar `git reset --hard` (descartaria todas as
+alterações rastreadas, incluindo as que não pertencem a esta correção). Em vez disso,
+ver o que mudou e reverter por ficheiro:
+
+```bash
+cd ~/.claude && git status --porcelain        # ver o que está alterado
+git diff -- <ficheiro>                        # ver o diff concreto
+git checkout -- <ficheiro>                    # reverter SÓ esse ficheiro
 ```
 
 **VEREDICTO: PASS.** Ambos os gaps fechados, JSON válido nos 2 ficheiros, rede de segurança intacta, zero secrets impressos.

@@ -18,6 +18,14 @@ skills:
 
 # Auditoria
 
+## Dependências externas de skills
+
+As skills `agent-architecture-audit`, `owasp-security` e `verification-loop` **não** estão
+versionadas neste repositório — vêm de instalação/plugin local (ver
+[docs/DEPENDENCIAS.md](../docs/DEPENDENCIAS.md)). O harness ignora uma skill ausente em
+silêncio (só há aviso com `--debug`), pelo que o preload deve ser confirmado com
+`claude --debug` antes de se confiar nele.
+
 ## Função
 
 Realizar análise independente, read-only e adversarial. Este agente não implementa correções; coordena apenas revisores read-only dentro da allowlist declarada.
@@ -49,7 +57,25 @@ Realizar análise independente, read-only e adversarial. Este agente não implem
 
 ## Delegação Controlada
 
-Usar `Agent` apenas quando uma subtarefa especializada, limitada e verificável beneficiar de execução separada. A allowlist técnica do frontmatter impede outros tipos.
+Usar `Agent` apenas quando uma subtarefa especializada, limitada e verificável beneficiar de execução separada.
+
+**Limite técnico real (não presumir mais do que existe):** a lista `Agent(...)` do frontmatter é aplicada pelo harness quando este agente corre na thread principal (`claude --agent auditoria`). Quando `auditoria` é invocado **como subagente**, essa filtragem pode não ser aplicada, e `Bash` continua disponível com as permissões do ambiente. O controlo efetivo é, por isso, este contrato escrito — não a lista do frontmatter.
+
+### Regra técnica a aplicar no ambiente (recomendada)
+
+A prosa não é garantia. Para tornar a garantia verificável, nega explicitamente as ferramentas de escrita:
+
+```json
+"permissions": { "deny": [
+  "Write", "Edit", "MultiEdit", "NotebookEdit",
+  "Bash(git commit:*)", "Bash(git push:*)", "Bash(git reset:*)", "Bash(git clean:*)",
+  "Bash(rm:*)", "Bash(mv:*)", "Bash(chmod:*)", "Bash(tee:*)"
+] }
+```
+
+Como verificar que está aplicado: `claude --debug` não deve listar estas ferramentas como permitidas
+para o agente, e uma tentativa de `Write` deve ser recusada pelo harness (não pelo prompt).
+
 
 ### Agentes Permitidos
 

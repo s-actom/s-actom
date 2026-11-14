@@ -19,18 +19,20 @@ MAX_FILES=150
 REVIEW_TIMEOUT=540
 KEEP_RUNS=10
 GLOBAL_CONFIG=${CR_GLOBAL_CONFIG-$HOME/.claude/coderabbit/review-instructions.md}
+TIMEOUT_EXPLICITO=0
 
 not_run() { echo "CODERABBIT: NOT_RUN ($1)"; exit 4; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --scope) SCOPE="$2"; shift 2 ;;
-    --base) BASE="$2"; shift 2 ;;
-    --dir) DIR="$2"; shift 2 ;;
+    # $2 tem de existir: `shift 2` sem 2 argumentos não consome nada e o while repete para sempre.
+    --scope)   [ $# -ge 2 ] || not_run "falta o valor de --scope"; SCOPE="$2"; shift 2 ;;
+    --base)    [ $# -ge 2 ] || not_run "falta o valor de --base"; BASE="$2"; shift 2 ;;
+    --dir)     [ $# -ge 2 ] || not_run "falta o valor de --dir"; DIR="$2"; shift 2 ;;
+    --timeout) [ $# -ge 2 ] || not_run "falta o valor de --timeout"; REVIEW_TIMEOUT="$2"; TIMEOUT_EXPLICITO=1; shift 2 ;;
     --force) FORCE=1; shift ;;
     --fresh) FRESH=1; FORCE=1; shift ;;
     --check) CHECK=1; shift ;;
-    --timeout) REVIEW_TIMEOUT="$2"; shift 2 ;;
     -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) not_run "argumento desconhecido: $1" ;;
   esac
@@ -72,15 +74,22 @@ if [ "$SCOPE" != work ]; then
 fi
 
 # Diff do scope (texto) — mesma seleção que a CLI recebe.
+# core.quotePath=false: nomes Unicode chegam como estão (sem escapes), senão shasum/grep falham
+# em silêncio e um ficheiro não revisto passa por revisto.
 scope_diff() {
   case "$SCOPE" in
-    committed) git diff --no-color "$@" "$REF" HEAD -- "$PATHSPEC" ;;
-    *)         git diff --no-color "$@" "$REF" -- "$PATHSPEC" ;;
+    committed) git -c core.quotePath=false diff --no-color "$@" "$REF" HEAD -- "$PATHSPEC" ;;
+    *)         git -c core.quotePath=false diff --no-color "$@" "$REF" -- "$PATHSPEC" ;;
   esac
 }
-untracked() { [ "$SCOPE" = committed ] || git ls-files --others --exclude-standard -- "$PATHSPEC"; }
+untracked() { [ "$SCOPE" = committed ] || git -c core.quotePath=false ls-files --others --exclude-standard -- "$PATHSPEC"; }
 
 FILES=$( { scope_diff --name-only; untracked; } | sort -u)
+# Nome com quebra de linha ou controlo não é representável neste pipeline: falha em vez de
+# rever um conjunto diferente do real.
+if printf '%s\n' "$FILES" | LC_ALL=C grep -q '[[:cntrl:]]'; then
+  not_run "nome de ficheiro com caracteres de controlo; rever à mão"
+fi
 if [ -z "$FILES" ]; then
   echo "CODERABBIT: NO_DIFF (scope=$SCOPE${DIR:+ dir=$PATHSPEC}; nada para rever)"
   exit 0
@@ -88,14 +97,27 @@ fi
 NFILES=$(printf '%s\n' "$FILES" | grep -c .)
 
 # --- Impressão digital do diff (dedup): não repetir review sem diff novo.
+# Sem ferramenta de hash não há dedup fiável: um FP vazio faria tudo parecer "já revisto".
+command -v shasum >/dev/null 2>&1 || not_run "shasum ausente: não é possível calcular o fingerprint do diff"
 GITDIR=$(git rev-parse --absolute-git-dir)
 STATE="$GITDIR/coderabbit"
 mkdir -p "$STATE" || not_run "sem escrita em $STATE"
 FP=$( {
   printf 'scope=%s base=%s dir=%s\n' "$SCOPE" "$BASE" "$PATHSPEC"
   scope_diff --binary
-  untracked | while IFS= read -r u; do printf '%s ' "$u"; shasum -a 256 < "$u" 2>/dev/null | cut -d' ' -f1; done
+  untracked | while IFS= read -r u; do
+    h=$(shasum -a 256 < "$u" 2>/dev/null | cut -d' ' -f1)
+    [ -n "$h" ] || { : >"$STATE/.hash-fail"; h="UNREADABLE"; }
+    printf '%s %s\n' "$u" "$h"
+  done
 } | shasum -a 256 | cut -d' ' -f1)
+# Um ficheiro ilegível torna o fingerprint não confiável: não deduplicar nem marcar como revisto.
+if [ -e "$STATE/.hash-fail" ]; then
+  rm -f -- "$STATE/.hash-fail"
+  not_run "não foi possível ler o conteúdo de um ficheiro do scope; rever à mão"
+fi
+# Fingerprint vazio (pipeline falhou) nunca é identidade válida.
+case "$FP" in ''|*[!0-9a-f]*) not_run "fingerprint do diff inválido; rever à mão" ;; esac
 REVIEWED=0
 [ -f "$STATE/last-reviewed" ] && [ "$(cut -d' ' -f1 "$STATE/last-reviewed")" = "$FP" ] && REVIEWED=1
 if [ "$CHECK" = 1 ]; then
@@ -121,15 +143,18 @@ PAT_RES=(
   'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'
 )
 
-added_content() { # linhas novas de um ficheiro do scope (ficheiro novo não seguido = conteúdo inteiro)
+# Conteúdo que a CLI vai receber: linhas ADICIONADAS **e REMOVIDAS**.
+# Uma credencial apagada do ficheiro continua no diff enviado — tem de ser detetada.
+# "./$1" evita que um nome como "--help" ou "-" seja lido como opção do grep.
+added_content() { # linhas do diff de um ficheiro do scope (ficheiro novo não seguido = conteúdo inteiro)
   if [ -f "$1" ] && ! git ls-files --error-unmatch -- "$1" >/dev/null 2>&1 && [ "$SCOPE" != committed ]; then
-    grep -I '' "$1" 2>/dev/null
+    grep -I '' -- "./$1" 2>/dev/null
     return
   fi
   case "$SCOPE" in
     committed) git diff --no-color -U0 "$REF" HEAD -- "$1" ;;
     *)         git diff --no-color -U0 "$REF" -- "$1" ;;
-  esac 2>/dev/null | grep -E '^\+' | grep -vE '^\+\+\+ '
+  esac 2>/dev/null | awk '/^@@/{h=1} h'   # dentro de um hunk, "+++ x" é CONTEÚDO, não cabeçalho
 }
 
 HITS=""
@@ -144,7 +169,8 @@ while IFS= read -r f; do
   [ -n "$content" ] || continue
   i=0
   while [ "$i" -lt "${#PAT_RES[@]}" ]; do
-    if printf '%s\n' "$content" | grep -qE -e "${PAT_RES[$i]}"; then
+    # herestring em vez de pipeline: com pipefail, o SIGPIPE do grep -q podia falsificar o resultado
+    if grep -qE -e "${PAT_RES[$i]}" <<< "$content"; then
       HITS="$HITS
   $f: padrão ${PAT_NAMES[$i]}"
     fi
@@ -193,6 +219,15 @@ elif [ -n "$GLOBAL_CONFIG" ]; then
 fi
 TO=""
 for t in timeout gtimeout; do command -v "$t" >/dev/null 2>&1 && { TO="$t $REVIEW_TIMEOUT"; break; }; done
+# macOS não traz `timeout` (é `gtimeout`, do coreutils). Sem ferramenta:
+#  - se o limite foi PEDIDO (--timeout), falha em vez de ignorar o pedido;
+#  - se é o prazo por omissão, avisa e segue sem limite (comportamento histórico).
+if [ -z "$TO" ]; then
+  if [ "$TIMEOUT_EXPLICITO" = 1 ]; then
+    not_run "sem 'timeout'/'gtimeout': --timeout $REVIEW_TIMEOUT não pode ser aplicado"
+  fi
+  echo "aviso: sem 'timeout'/'gtimeout' no PATH; a revisão corre sem limite de tempo" >&2
+fi
 RAW="$STATE/review-$(date +%Y%m%d-%H%M%S)-$$.ndjson"
 echo "coderabbit $* — scope=$SCOPE, $NFILES ficheiro(s); pode demorar minutos" >&2
 printf '%s\n' "$FILES" | sed 's/^/  /' >&2

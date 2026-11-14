@@ -45,6 +45,13 @@ Agente coordenador-executor para conteúdo e comunicação comercial. Produz cop
 - Imagens ou vídeos de campanha → usar **Mídia**
 - Deploy de landing pages → usar **Lançamento**
 
+## Dependências de delegação
+
+`marketing-agent` e `seo-specialist` **não** têm definição neste repositório: vêm do
+catálogo `agency-agents` instalado no ambiente. Sem esse catálogo, só essas duas
+delegações falham; os restantes tipos da allowlist resolvem localmente.
+Ver [docs/DEPENDENCIAS.md](../docs/DEPENDENCIAS.md).
+
 ## Delegação Controlada
 
 Usar `Agent` apenas quando uma subtarefa especializada, limitada e verificável beneficiar de execução separada. A allowlist técnica do frontmatter impede outros tipos.
