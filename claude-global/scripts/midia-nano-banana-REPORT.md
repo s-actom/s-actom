@@ -116,7 +116,7 @@ Alinhado com `global-lessons.md` (aprovação visual obrigatória).
 
 ### 3.1 Entradas em `~/.claude.json`
 
-**Entrada A — `/Users/goncaloferro` project context (L651):**
+**Entrada A — `~` project context (L651):**
 ```json
 "nano-banana-mcp": {
   "type": "stdio",
@@ -221,7 +221,7 @@ Com `defaultMode: bypassPermissions` global, provavelmente passa. Mas se o utili
 
 ### 6.2 Entrada home sem API key (BAIXO)
 
-A entrada Nano Banana para `/Users/goncaloferro` tem `env: {}`. Se essa é a entrada que carrega na sessão home, `generate_image` falha até chamar `configure_gemini_token`.
+A entrada Nano Banana para `~` tem `env: {}`. Se essa é a entrada que carrega na sessão home, `generate_image` falha até chamar `configure_gemini_token`.
 
 **Fix opcional:** verificar qual entrada está ativa e alinhar com a que tem a key.
 
@@ -237,7 +237,7 @@ Referenciadas no `midia.md` mas não inspecionadas nesta sessão (fora do scope)
 |---|---|---|
 | `midia.md` | ✅ Completo | Manter |
 | Nano Banana MCP (entrada com key) | ✅ Operacional | Manter |
-| Nano Banana MCP (entrada home sem key) | ⚠️ Incompleto | Adicionar GEMINI_API_KEY à entrada `/Users/goncaloferro` |
+| Nano Banana MCP (entrada home sem key) | ⚠️ Incompleto | Adicionar GEMINI_API_KEY à entrada `~` |
 | `generate_image` whitelist | ⚠️ Ausente | Adicionar a `settings.local.json` (opcional com bypassPermissions) |
 | `continue_editing` whitelist | ⚠️ Ausente | Idem |
 | `get_last_image_info` whitelist | ⚠️ Ausente | Idem |

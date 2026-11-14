@@ -146,7 +146,7 @@ Não está no disco nem é referenciado em lado nenhum. Nada a mostrar. (Possive
 | Ficheiro | Existe? | Prova |
 |---|---|---|
 | `~/.claude/CLAUDE.local.md` | **não** | `ls` → No such file |
-| `./CLAUDE.md` projeto (cwd `~/`) | **sim** | `/Users/goncaloferro/CLAUDE.md` — 15 linhas · 523B (conteúdo não mostrado, por pedido) |
+| `./CLAUDE.md` projeto (cwd `~/`) | **sim** | `~/CLAUDE.md` — 15 linhas · 523B (conteúdo não mostrado, por pedido) |
 | `./CLAUDE.local.md` projeto | **não** | `ls` → No such file |
 | `~/.claude/global-lessons.md` | **sim** | 55 linhas · 3.2K — citado por path no startup, não `@`-import |
 

@@ -95,7 +95,7 @@ Backup primeiro (fora de ~/.claude): `~/claude-settings-backup-20260617-054450.j
 >       {
 >         "hooks": [
 >           { "type": "command",
->             "command": "bash /Users/goncaloferro/.claude/scripts/expose-ecc-skills.sh",
+>             "command": "bash ~/.claude/scripts/expose-ecc-skills.sh",
 >             "timeout": 15, "statusMessage": "Expondo skills ECC..." } ]
 >       }
 ```

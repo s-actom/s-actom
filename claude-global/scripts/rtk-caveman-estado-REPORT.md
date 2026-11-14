@@ -36,7 +36,7 @@ rtk --version  → rtk 0.39.0
   "hooks": [
     {
       "type": "command",
-      "command": "/Users/goncaloferro/.claude/hooks/rtk-rewrite.sh"
+      "command": "~/.claude/hooks/rtk-rewrite.sh"
     }
   ]
 }
@@ -49,7 +49,7 @@ rtk --version  → rtk 0.39.0
 rtk Configuration:
 
 [ok] Hook: rtk hook claude (native binary command)
-[ok] RTK.md: /Users/goncaloferro/.claude/RTK.md (slim mode)
+[ok] RTK.md: ~/.claude/RTK.md (slim mode)
 [ok] Global (~/.claude/CLAUDE.md): @RTK.md reference
 [--] Local (./CLAUDE.md): exists but rtk not configured
 [ok] settings.json: RTK hook configured
@@ -83,7 +83,7 @@ Dirs do plugin presentes: `~/.claude/plugins/cache/caveman`, `~/.claude/plugins/
 ```json
 {
   "type": "command",
-  "command": "node \"/Users/goncaloferro/.claude/hooks/caveman-activate.js\"",
+  "command": "node \"~/.claude/hooks/caveman-activate.js\"",
   "timeout": 5,
   "statusMessage": "Loading caveman mode..."
 }
@@ -95,7 +95,7 @@ Ficheiro existe: `~/.claude/hooks/caveman-activate.js` (6.1K).
 ```json
 {
   "type": "command",
-  "command": "node \"/Users/goncaloferro/.claude/hooks/caveman-mode-tracker.js\"",
+  "command": "node \"~/.claude/hooks/caveman-mode-tracker.js\"",
   "timeout": 5,
   "statusMessage": "Tracking caveman mode..."
 }

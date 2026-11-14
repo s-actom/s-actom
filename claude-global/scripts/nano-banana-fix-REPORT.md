@@ -36,7 +36,7 @@ mcp__nano-banana-mcp__get_last_image_info
 
 **Investigação (python, key só como booleano):**
 
-| | Entrada A — `projects['/Users/goncaloferro'].mcpServers` | Entrada B — top-level global `mcpServers` |
+| | Entrada A — `projects['~'].mcpServers` | Entrada B — top-level global `mcpServers` |
 |---|---|---|
 | GEMINI_API_KEY | ausente | **presente** |
 | outros servers | nenhum (nano = único) | helius, stitch, motion, higgsfield, playwright, blender |
