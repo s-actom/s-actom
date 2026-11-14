@@ -127,3 +127,28 @@ onde há comportamento executável:
 | `scripts/nano-banana-fix-REPORT.md` | Rollback por ficheiro com backup e aviso; `git reset --hard` substituído por `git status` + `git checkout -- <ficheiro>`. |
 | `agents/conteudo.md` | Documenta que `marketing-agent`/`seo-specialist` vêm do catálogo `agency-agents`. |
 | `docs/DEPENDENCIAS.md` | Novo: skills, agentes e programas externos que a instalação de destino precisa. |
+
+## Correções da revisão CodeRabbit (3.ª ronda, 2026-11-14)
+
+Segunda revisão sobre os commits finais. Cada correção tem teste de regressão; as que
+alteram comportamento executável foram verificadas por mutação (o teste falha com o
+comportamento antigo).
+
+| Ficheiro | Correção | Prova |
+|---|---|---|
+| `validar.sh` | Um nome com dois-pontos (`credenciais:backup.txt`) fazia o `sed` falhar e **imprimir a linha com o token**. Agora extrai ficheiro+linha de forma gananciosa e nunca emite a linha original. | `validar.test.sh` caso (a) |
+| `hooks/claude-security-stop-hook.mjs` | `file_path` era extraído por regex de texto livre e cortava em espaços: um `Edit` em `/app b/…` desaparecia de `roots` e o gate liberava sem verificar. Campos estruturados usam-se literalmente. | teste de 2 repos |
+| `hooks/claude-security-stop-hook.mjs` | Com >5000 ficheiros não rastreados o fingerprint ficava parcial e um recibo antigo podia ser reutilizado. Fingerprint parcial já não casa com recibo. | — |
+| `equipas/reverter/reverter-fase-1.sh` | Um symlink em `skills/equipa-X` fazia o `rm` apagar ficheiro de outra pasta. Resolve o pai com `cd -P` e recusa sair de `skills/`. | caso (d) |
+| `equipas/reverter/reverter-fase-1.sh` | Uma skill `equipa-*` criada pelo dono depois da ativação deixava a reversão pendente para sempre. A verificação final cobre só o que esta instalação criou. | caso (e) |
+| `equipas/hooks/atualizar.py` | Conflicto dono/publicação: reconfere o hash imediatamente antes do `replace`. | `test_atualizar` |
+| `equipas/hooks/atualizar.py` | Registo `instalado.sha256` era escrito só no fim; uma falha a meio deixava o registo desatualizado e a skill "presa". Passa a gravar num ponto único após o ciclo. | (estrutural) |
+| `scripts/coderabbit-review.sh` | `[a].txt` era tratado como *pathspec* glob e escapava à varredura. `--literal-pathspecs`. | — |
+| `docs/RECUPERACAO.md` | Backup em `backups/<data>` era sobrescrito em execuções repetidas no mesmo dia. `mktemp -d` por execução + `cp -np`. | — |
+| `PLUGIN_SCHEMA_NOTES.md` | `mcpServers: {}` não é opt-out: o Claude Code carrega `.mcp.json` e funde depois. Corrigido com o procedimento real. | — |
+| `docs/DEPENDENCIAS.md` | 7 revisores estavam listados como externos mas têm ficheiro local; `code-reviewer`/`security-reviewer` não existem. Listas corrigidas e instalação de `owasp-security` documentada. | contagem real do disco |
+
+**Limitação conhecida (não corrigível sem cooperação do editor):** em `atualizar.py` resta a
+janela entre a reconferência do hash e o `os.replace`. Fechá-la exigiria um lock partilhado
+com o editor do dono. A reconferência reduz a janela ao mínimo mensurável.
+

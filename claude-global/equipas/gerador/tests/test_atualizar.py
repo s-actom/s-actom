@@ -103,6 +103,40 @@ class TestPublicacao(unittest.TestCase):
             self.assertEqual((t / "skills/equipa-sistema/SKILL.md").read_bytes(), antigos["equipa-sistema"])
             self.assertTrue((t / "skills/equipa-ia/SKILL.md").read_bytes().endswith(b"novo\n"))
 
+    def test_nao_pisa_o_ficheiro_se_o_dono_gravar_durante_a_geracao(self):
+        """Regressão (CodeRabbit PR #1): o dono pode gravar entre a leitura e a substituição.
+        A reconferência do hash imediatamente antes do replace tem de preservar a versão dele.
+
+        A edição é injetada na PRIMEIRA leitura do alvo — ou seja, depois de `atual` ser
+        calculado e antes da reconferência. Sem a reconferência, a publicação sobrescrevia.
+        (A janela entre a reconferência e o `rename` átómico continua a existir: sem
+        cooperação do editor não é eliminável; ver docs/AUDITORIA.md.)"""
+        with tempfile.TemporaryDirectory() as tmp:
+            t = Path(tmp)
+            nome = "equipa-ia"
+            base = skill(nome)
+            dono = ('---\nname: equipa-ia\ndescription: "Editado pelo dono agora, com mais de vinte caracteres."\n---\neditado\n').encode()
+            with instalacao(t, {nome: base}, {nome: skill(nome).replace(b"corpo", b"corpo novo")}):
+                original_sha = atualizar.sha
+                feito = {"sim": False}
+
+                def sha_que_edita(dados):
+                    resultado = original_sha(dados)
+                    if not feito["sim"] and dados == base:
+                        feito["sim"] = True
+                        (t / "skills" / nome / "SKILL.md").write_bytes(dono)
+                    return resultado
+
+                atualizar.sha = sha_que_edita
+                try:
+                    mudou, _ = atualizar.sincronizar(t / "origem")
+                finally:
+                    atualizar.sha = original_sha
+                atual = (t / "skills" / nome / "SKILL.md").read_bytes()
+                self.assertTrue(feito["sim"], "o teste não injetou a edição do dono")
+                self.assertEqual(atual, dono, "a gravação do dono foi perdida")
+                self.assertEqual(mudou, 0, "nada devia ter sido publicado")
+
     def test_sincronizar_tira_o_guarda_antigo_das_equipas_vigiadas(self):
         # Migração do M1: as skills instaladas com o bloco antigo (e registadas) passam a sair sem ele; as outras ficam.
         vigiadas = sorted(e["skill"] for e in REGISTO["equipas"] if e.get("hooks_previstos"))

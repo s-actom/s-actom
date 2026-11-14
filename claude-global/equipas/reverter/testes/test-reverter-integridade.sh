@@ -90,5 +90,31 @@ else
 fi
 [ "$RC" -eq 0 ] || ko "c) saída esperada 0, obtida $RC"
 
+# --- (d) skills/equipa-X é uma ligação para fora: não apagar o ficheiro externo ---
+montar
+EXT="$T/externo"; mkdir -p "$EXT"
+printf 'importante\n' > "$EXT/a.md"
+H_EXT="$(sha "$EXT/a.md")"
+mkdir -p "$C/skills"; ln -s "$EXT" "$C/skills/equipa-teste"
+printf '%s  equipa-teste/a.md\n' "$H_EXT" > "$BASE/estado/instalado.sha256"
+reverter --aplicar >"$T/out-d.txt" 2>&1; RC=$?
+if [ -f "$EXT/a.md" ]; then ok "d) ligação para fora: ficheiro externo preservado"
+else ko "d) o rm atravessou a ligação e apagou um ficheiro de fora"; fi
+grep -qiE "fora de skills|ligação simbólica" "$T/out-d.txt" && ok "d) reporta o motivo" || ko "d) não reporta"
+[ "$RC" -eq 1 ] && ok "d) sai 1 (pendente)" || ko "d) código $RC, esperado 1"
+
+# --- (e) skill equipa-* criada pelo dono DEPOIS da ativação não bloqueia a reversão ---
+# Uma só reversão: a instalação criou equipa-instalada; o dono criou equipa-nova depois.
+montar
+mkdir -p "$C/skills/equipa-instalada" "$C/skills/equipa-nova"
+printf 'instalado\n' > "$C/skills/equipa-instalada/a.md"
+printf -- '---\nname: equipa-nova\n---\n' > "$C/skills/equipa-nova/SKILL.md"
+printf '%s  equipa-instalada/a.md\n' "$(sha "$C/skills/equipa-instalada/a.md")" > "$BASE/estado/instalado.sha256"
+reverter --aplicar >"$T/out-e.txt" 2>&1; RC=$?
+[ -f "$C/skills/equipa-nova/SKILL.md" ] && ok "e) a skill nova do dono ficou" || ko "e) apagou a skill do dono"
+[ ! -e "$C/skills/equipa-instalada/a.md" ] && ok "e) a skill instalada foi removida" || ko "e) não removeu a skill instalada"
+[ "$RC" -eq 0 ] && ok "e) reversão conclui (exit 0)" || { ko "e) exit $RC: skill alheia deixou a reversão pendente"; sed -n '1,6p' "$T/out-e.txt"; }
+[ ! -f "$BASE/FASE-1-ATIVA" ] && ok "e) marca removida" || ko "e) marca ficou"
+
 echo
 if [ "$FALHAS" -eq 0 ]; then echo "TODOS OK"; exit 0; else echo "$FALHAS falha(s)"; exit 1; fi

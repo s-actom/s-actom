@@ -82,3 +82,68 @@ test("sem recusa e sem relatório: bloqueia com razão acionável", () => {
   const obj = JSON.parse(`${r.stdout || ""}`.trim().split("\n").pop());
   assert.equal(obj.decision, "block");
 });
+
+// --- Regressão: caminho estruturado com espaços (2 repos, só o 1.º com relatório) ---
+// Antes: file_path era extraído por regex de texto livre e cortava em "/app b/server.js" -> "/app".
+// O 2.º repositório desaparecia de `roots` e o gate liberava a tarefa sem verificação.
+function repo(dir) {
+  fs.mkdirSync(dir, { recursive: true });
+  const run = (args) => spawnSync("git", ["-C", dir, ...args], { encoding: "utf8" });
+  run(["init", "-q"]);
+  fs.writeFileSync(path.join(dir, "server.js"), "1\n");
+  run(["add", "."]);
+  run(["-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "base"]);
+  return run(["rev-parse", "HEAD"]).stdout.trim();
+}
+
+function relatorioValido(root, head) {
+  const dir = path.join(root, "CLAUDE-SECURITY-20260101-000000");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "CLAUDE-SECURITY-RESULTS.md"), "# results\n");
+  fs.writeFileSync(path.join(dir, "CLAUDE-SECURITY-RESULTS.jsonl"), "{}\n");
+  fs.writeFileSync(
+    path.join(dir, `CLAUDE-SECURITY-REVISION-${head.slice(0, 12)}.json`),
+    JSON.stringify({
+      scan_root: fs.realpathSync(root),
+      revision: { commit: head, dirty: false },
+      verification: { status: "verified" },
+      mode: "scan",
+      scope: [],
+      generated_at: new Date().toISOString(),
+    }),
+  );
+}
+
+test("Edit num 2.º repositório com espaço no nome não escapa ao gate", () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), "sec-2repos-"));
+  const A = path.join(base, "app-a");
+  const B = path.join(base, "app b");
+  const headA = repo(A);
+  repo(B); // B fica SEM relatório
+
+  relatorioValido(A, headA);
+
+  const tp = path.join(base, "t.jsonl");
+  const linhas = [
+    linha({ type: "user", message: { role: "user", content: "Implementa o código do hook" } }),
+    linha({
+      type: "assistant",
+      message: {
+        role: "assistant",
+        content: [
+          { type: "tool_use", id: "t1", name: "Read", input: { file_path: path.join(A, "server.js") } },
+          { type: "tool_use", id: "t2", name: "Edit", input: { file_path: path.join(B, "server.js") } },
+        ],
+      },
+    }),
+  ];
+  fs.writeFileSync(tp, linhas.join("\n") + "\n");
+
+  const r = correr({ hook_event_name: "Stop", transcript_path: tp, last_assistant_message: "", cwd: A });
+  const obj = JSON.parse(`${r.stdout || ""}`.trim().split("\n").pop());
+  assert.equal(
+    obj.decision,
+    "block",
+    "o gate tem de bloquear: o 2.º repo não tem relatório (caminho com espaços tem de ser reconhecido)",
+  );
+});

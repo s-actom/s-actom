@@ -98,11 +98,19 @@ def sincronizar(origem: Path) -> tuple:
                 continue  # frontmatter desconhecido (ex.: hooks): não se publica sem revisão
             if not MARCA.exists():
                 return mudou, recusados  # reversão a meio
+            # Reconferir AGORA: o dono pode ter gravado o ficheiro entre a leitura (Line 90) e aqui.
+            antes_de_escrever = sha(alvo.read_bytes()) if alvo.is_file() and not alvo.is_symlink() else None
+            if antes_de_escrever != atual:
+                continue  # mudou durante a geração: preserva a versão do dono
             escrever_atomico(alvo, novo, 0o644)
             inst[rel] = sha(novo)
             mudou += 1
-    linhas = "".join(f"{h}  {rel}\n" for rel, h in sorted(inst.items()))
-    escrever_atomico(INST, linhas.encode("utf-8"), 0o600)
+
+    def gravar_registo() -> None:
+        linhas = "".join(f"{h}  {rel}\n" for rel, h in sorted(inst.items()))
+        escrever_atomico(INST, linhas.encode("utf-8"), 0o600)
+
+    gravar_registo()
     return mudou, recusados
 
 

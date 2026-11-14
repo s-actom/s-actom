@@ -13,6 +13,8 @@ const MAX_PATHS = 100;
 const MAX_UNTRACKED_FILES = 5000;
 const COMMAND = "/claude-security";
 const OWNER_MARKER = "OWNER_ACTION_REQUIRED";
+// Campos de ferramenta cujo valor É um caminho (usados tal como estão, sem regex de texto).
+const PATH_FIELDS = ["file_path", "path", "notebook_path", "cwd", "working_directory", "directory"];
 const BLOCKED_MARKERS = /CLAUDE_SECURITY_(?:BLOCKED|GATE_REQUIRED)/i;
 const CODE_ACTION = /\b(?:implement\w*|build\w*|constru\w*|desenvolv\w*|faz|fazer|fa[çc]a|corrig\w*|fix\w*|alter\w*|modific\w*|edit\w*|cri(?:a|ar|e|ou)\w*|create\w*|review\w*|rever\w*|audit\w*|test\w*|scan\w*|release\w*|deploy\w*|commit\w*|push\w*)\b/i;
 const CODE_NOUN = /\b(?:c[oó]digo|code|repo(?:sit[oó]rio|sitory)?|projecto|projeto|project|api|backend|frontend|hook|script|configura(?:ç|c)[aã]o|configuration|database|base de dados|schema|migration|branch|diff|seguran(?:ç|c)a|security)\b/i;
@@ -191,11 +193,19 @@ function gitRoot(candidate) {
   }
 }
 
-function discoverRoots(input, turnRecords, userText) {
+export function discoverRoots(input, turnRecords, userText) {
   const paths = [input.cwd].filter((value) => typeof value === "string");
   paths.push(...candidatePathsFromString(userText, input.cwd || process.cwd()));
   for (const use of toolUses(turnRecords)) {
     if (!CODE_TOOLS.has(use.name)) continue;
+    // Campos estruturados são caminhos COMPLETOS: não passam pela extração por regex dentro
+    // de texto livre, que corta em espaços ("/app b/server.js" viraria "/app").
+    for (const key of PATH_FIELDS) {
+      const value = use.input?.[key];
+      if (typeof value === "string" && value.length > 0) {
+        paths.push(path.isAbsolute(value) ? value : path.resolve(input.cwd || process.cwd(), value));
+      }
+    }
     for (const text of collectStrings(use.input)) {
       paths.push(...candidatePathsFromString(text, input.cwd || process.cwd()));
     }
@@ -229,12 +239,17 @@ function repositoryState(root) {
     const dirtyPaths = [...new Set([...splitZero(tracked), ...splitZero(untracked)])]
       .filter((name) => !name.split("/", 1)[0].startsWith("CLAUDE-SECURITY-"))
       .sort();
+    const untrackedAll = splitZero(untracked);
+    // Se o limite corta ficheiros, o fingerprint não representa o estado real:
+    // marcá-lo como parcial impede que um recibo antigo seja reutilizado para conteúdo que mudou.
+    const fingerprintCompleto = untrackedAll.length <= MAX_UNTRACKED_FILES;
     const hash = crypto.createHash("sha256");
     hash.update(head);
     hash.update("\0");
     hash.update(status);
     hash.update(git(root, ["diff", "--binary", "HEAD", "--"], { encoding: null }));
-    for (const name of splitZero(untracked).slice(0, MAX_UNTRACKED_FILES).sort()) {
+    hash.update(fingerprintCompleto ? "untracked:full\0" : "untracked:partial\0");
+    for (const name of untrackedAll.slice(0, MAX_UNTRACKED_FILES).sort()) {
       hash.update(name);
       hash.update("\0");
       hash.update(git(root, ["hash-object", "--no-filters", "--", name]).trim());
@@ -245,6 +260,7 @@ function repositoryState(root) {
       dirty: dirtyPaths.length > 0,
       dirtyPaths,
       fingerprint: hash.digest("hex"),
+      complete: fingerprintCompleto,
     };
   } catch {
     return null;
@@ -387,7 +403,9 @@ function validReport(root, state, startedAt) {
     }
     const generatedAt = Date.parse(stamp.generated_at || "");
     if (!Number.isFinite(generatedAt)) continue;
+    // Um fingerprint parcial nunca casa com recibo: só um relatório fresco nesta janela vale.
     const receiptMatches =
+      state.complete !== false &&
       receipt?.root === root &&
       receipt?.report_path === directory &&
       receipt?.revision === state.head &&

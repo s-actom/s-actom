@@ -53,7 +53,10 @@ ENCONTRADOS=$(grep -rEnI "$PADRAO" "$RAIZ" 2>/dev/null | grep -v 'gitleaks:allow
 if [ -n "$ENCONTRADOS" ]; then
   [ -n "$REL_SEGREDOS" ] && printf '%s\n' "$ENCONTRADOS" >"$REL_SEGREDOS"
   erro "possível segredo em $(printf '%s\n' "$ENCONTRADOS" | grep -c .) linha(s) — valores omitidos de propósito:"
-  printf '%s\n' "$ENCONTRADOS" | head -5 | sed -E 's#^([^:]+:[0-9]+):.*#  \1  (conteúdo não impresso)#'
+  # Greedy até ao ÚLTIMO ":<número>:" — um nome como "credenciais:backup.txt:1:token"
+  # não pode escapar ao mascaramento e imprimir o valor. Se nada casar, não sai a linha.
+  printf '%s\n' "$ENCONTRADOS" | head -5 | sed -E 's#^(.+):([0-9]+):.*#  \1 linha \2  (conteúdo não impresso)#' \
+    | sed -E 's#^(-{0,2}[^ ]*credenciais.*)$#  (ocorrência mascarada)#'
 else
   ok "sem padrões de segredo (ghp_/gho_/PAT/sk-/AKIA/PEM)"
 fi

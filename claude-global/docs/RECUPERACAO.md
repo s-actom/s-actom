@@ -26,10 +26,12 @@ Sempre: `mkdir -p ~/.claude/backups/$(date +%Y%m%d)` e copiar o original antes.
 
 ```bash
 # a partir da raiz do repo (pasta claude-global/)
-B=~/.claude/backups/$(date +%Y%m%d)
+# Um diretório por execução: repetir hoje não pode sobrescrever o backup de hoje.
+B=$(mktemp -d "$HOME/.claude/backups/$(date +%Y%m%d-%H%M%S)-XXXXXX") || exit 1
+echo "backups desta execução: $B"
 
 # 1) settings.json
-cp ~/.claude/settings.json "$B/" && cp claude-global/settings.json ~/.claude/settings.json
+cp -np ~/.claude/settings.json "$B/" && cp claude-global/settings.json ~/.claude/settings.json
 
 # 2) um agente específico
 cp claude-global/agents/construcao.md ~/.claude/agents/construcao.md

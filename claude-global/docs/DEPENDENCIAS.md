@@ -16,27 +16,30 @@ sempre com `claude --debug` numa instalação nova.
 | Skill | Usada por | Origem | Versionada aqui? |
 |---|---|---|---|
 | `agent-architecture-audit` | `agents/auditoria.md` | ECC (marketplace, MIT) | Não — reinstalar do marketplace |
-| `owasp-security` | `agents/auditoria.md` | instalação local (`~/.claude/skills/owasp-security/`) | Não |
+| `owasp-security` | `agents/auditoria.md` | clone manual de `github.com/agamm/claude-code-owasp` (MIT) para `~/.claude/skills/owasp-security/` | Não |
 | `verification-loop` | `agents/auditoria.md` | ECC | Não |
 | `superpowers:verification-before-completion` | `agents/auditoria.md` | plugin `superpowers@superpowers-dev` | Não |
 | `automation-audit-ops`, `workspace-surface-audit` | `agents/workspace-automation-auditor.md` | ECC | Não |
 
-## Revisores delegados por `agents/auditoria.md` (sem ficheiro local)
+## Revisores delegados por `agents/auditoria.md`
 
-A allowlist de `Agent(...)` em `auditoria.md` nomeia 29 revisores. Deste repositório só
-existem `agents/code-reviewer.md` e `agents/security-reviewer.md`. Os restantes vêm do
-catálogo `agency-agents` instalado no ambiente; sem ele, a delegação falha em silêncio
-(regra geral acima). Nomes afetados:
+A allowlist `Agent(...)` nomeia **29 revisores**. Só **7 têm definição local** neste repositório;
+os outros **22 vêm do catálogo `agency-agents`** instalado no ambiente. Sem ele, a delegação
+falha em silêncio (regra geral acima). Confirmar com `claude --debug` quais resolvem.
 
-`typescript-reviewer`, `python-reviewer`, `go-reviewer`, `java-reviewer`, `rust-reviewer`,
-`cpp-reviewer`, `csharp-reviewer`, `kotlin-reviewer`, `swift-reviewer`, `php-reviewer`,
-`fsharp-reviewer`, `flutter-reviewer`, `mle-reviewer`, `healthcare-reviewer`,
-`network-config-reviewer`, `network-troubleshooter`, `database-platform-reviewer`,
-`node-backend-reviewer`, `jvm-enterprise-reviewer`, `quarkus-reviewer`, `fastapi-reviewer`,
-`django-reviewer`, `react-reviewer`, `web-design-reviewer`, `application-security-auditor`,
-`crypto-protocol-auditor`, `silent-failure-hunter`.
+**Definidos aqui (7):** `application-security-auditor`, `crypto-protocol-auditor`,
+`database-platform-reviewer`, `node-backend-reviewer`, `jvm-enterprise-reviewer`,
+`quarkus-reviewer`, `web-design-reviewer`.
 
-Confirmar com `claude --debug` quais resolvem no ambiente de destino.
+**Externos (22):** `code-reviewer`, `security-reviewer`, `silent-failure-hunter`,
+`fastapi-reviewer`, `django-reviewer`, `react-reviewer`, `typescript-reviewer`,
+`python-reviewer`, `go-reviewer`, `java-reviewer`, `rust-reviewer`, `cpp-reviewer`,
+`csharp-reviewer`, `kotlin-reviewer`, `swift-reviewer`, `php-reviewer`, `fsharp-reviewer`,
+`flutter-reviewer`, `mle-reviewer`, `healthcare-reviewer`, `network-config-reviewer`,
+`network-troubleshooter`.
+
+> Nota: `agents/security-reviewer-fable52.md` existe, mas o nome **não** é `security-reviewer`,
+> por isso não resolve a delegação `security-reviewer` da allowlist.
 
 ## Agentes referenciados mas não definidos aqui
 
@@ -51,6 +54,17 @@ Sem esse catálogo, essas duas delegações falham (as restantes continuam a res
 | `jq`, `python3`, `shasum` | `equipas/reverter/*.sh`, `equipas/hooks/*` |
 | `node` (≥ 20) | hooks `.mjs`/`.js`, gerador de skills |
 | `git` | guardas, wrapper CodeRabbit |
+
+### Reinstalar `owasp-security` (não vem de plugin/marketplace)
+
+```bash
+git clone --depth 1 https://github.com/agamm/claude-code-owasp \
+  "$HOME/.claude/skills/owasp-security"
+```
+
+Não está declarada em `settings.json` (`enabledPlugins`/`extraKnownMarketplaces`), por isso
+não é instalada por essa via. Sem a skill, `auditoria` corre sem ela e o harness só avisa
+com `--debug`.
 
 ## Reinstalação declarativa
 

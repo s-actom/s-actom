@@ -89,13 +89,26 @@ done
 # 3. Skills instaladas
 INST="$BASE/estado/instalado.sha256"
 [ -f "$INST" ] || INST="$INST.tmp"   # ativação morta a meio da cópia das skills: lista parcial
+SKILLS_INSTALADAS=""   # diretórios que ESTA instalação criou; só estes são verificados no fim
 if [ -f "$INST" ]; then
   n_rm=0; n_fica=0
   while read -r h rel; do
     [[ "$rel" =~ ^(direcao-geral|equipa-[a-z]+)/[A-Za-z0-9._-]+$ ]] || { diz "linha ignorada em instalado.sha256: $rel"; PENDENTE=1; continue; }
     alvo="$C/skills/$rel"
+    case " $SKILLS_INSTALADAS " in
+      *" ${rel%%/*} "*) ;;
+      *) SKILLS_INSTALADAS="$SKILLS_INSTALADAS ${rel%%/*}" ;;
+    esac
     [ -e "$alvo" ] || continue
-    if [ -f "$alvo" ] && [ ! -L "$alvo" ] && [ "$(sha "$alvo")" = "$h" ]; then
+    # O PAI tem de estar dentro de skills/ sem ligações: um symlink em skills/equipa-X
+    # faria "$alvo" apontar para fora e o rm apagaria um ficheiro de outra pasta.
+    if [ -L "$alvo" ]; then diz "fica (é ligação simbólica): skills/$rel"; n_fica=$((n_fica + 1)); PENDENTE=1; continue; fi
+    pai=$(cd -P -- "$(dirname -- "$alvo")" 2>/dev/null && pwd -P) || { diz "FALHOU a resolver o pai de skills/$rel"; n_fica=$((n_fica + 1)); PENDENTE=1; continue; }
+    case "$pai/" in
+      "$(cd -P -- "$C/skills" 2>/dev/null && pwd -P)/"*) ;;
+      *) diz "fica (fora de skills/, via ligação): skills/$rel"; n_fica=$((n_fica + 1)); PENDENTE=1; continue ;;
+    esac
+    if [ -f "$alvo" ] && [ "$(sha "$alvo")" = "$h" ]; then
       if [ "$MODO" = aplicar ]; then
         if rm -- "$alvo" 2>/dev/null; then n_rm=$((n_rm + 1))
         else diz "FALHOU a remover: skills/$rel (reversão pendente)"; n_fica=$((n_fica + 1)); PENDENTE=1; fi
@@ -103,7 +116,11 @@ if [ -f "$INST" ]; then
     else diz "fica (mudou depois da instalação): skills/$rel"; n_fica=$((n_fica + 1)); PENDENTE=1; fi
   done <"$INST"
   if [ "$MODO" = aplicar ]; then
-    for d in "$C/skills/direcao-geral" "$C"/skills/equipa-*; do [ -d "$d" ] && [ ! -L "$d" ] && rmdir "$d" 2>/dev/null; done
+    # Só os diretórios desta instalação: uma skill equipa-* criada depois pelo dono fica.
+    for nome in $SKILLS_INSTALADAS; do
+      d="$C/skills/$nome"
+      [ -d "$d" ] && [ ! -L "$d" ] && rmdir "$d" 2>/dev/null
+    done
     [ "$n_fica" -eq 0 ] && rm -f -- "$INST"
   fi
   diz "skills: $n_rm ficheiros $([ "$MODO" = aplicar ] && echo removidos || echo a remover), $n_fica ficam"
@@ -118,7 +135,9 @@ done
 
 if [ "$MODO" = dry ]; then echo "Ensaio: nada mudou. Para desfazer: $0 --aplicar"; exit 0; fi
 grep -qF "$HK/" "$C/settings.json" && { diz "ATENÇÃO: settings.json ainda cita $HK/"; PENDENTE=1; }
-for d in "$C/skills/direcao-geral" "$C"/skills/equipa-*; do
+# Só o que ESTA instalação criou. Uma skill equipa-* nova do dono não é pendência.
+for nome in $SKILLS_INSTALADAS; do
+  d="$C/skills/$nome"
   [ -e "$d" ] && { diz "ATENÇÃO: ainda existe $d"; PENDENTE=1; }
 done
 [ "$PENDENTE" -eq 0 ] && rm -f -- "$MARCA"
