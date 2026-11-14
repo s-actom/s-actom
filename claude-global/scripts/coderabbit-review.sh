@@ -147,13 +147,13 @@ PAT_RES=(
 # Uma credencial apagada do ficheiro continua no diff enviado — tem de ser detetada.
 # "./$1" evita que um nome como "--help" ou "-" seja lido como opção do grep.
 added_content() { # linhas do diff de um ficheiro do scope (ficheiro novo não seguido = conteúdo inteiro)
-  if [ -f "$1" ] && ! git ls-files --error-unmatch -- "$1" >/dev/null 2>&1 && [ "$SCOPE" != committed ]; then
+  if [ -f "$1" ] && ! git --literal-pathspecs ls-files --error-unmatch -- "$1" >/dev/null 2>&1 && [ "$SCOPE" != committed ]; then
     grep -I '' -- "./$1" 2>/dev/null
     return
   fi
   case "$SCOPE" in
-    committed) git diff --no-color -U0 "$REF" HEAD -- "$1" ;;
-    *)         git diff --no-color -U0 "$REF" -- "$1" ;;
+    committed) git --literal-pathspecs diff --no-color -U0 "$REF" HEAD -- "$1" ;;
+    *)         git --literal-pathspecs diff --no-color -U0 "$REF" -- "$1" ;;
   esac 2>/dev/null | awk '/^@@/{h=1} h'   # dentro de um hunk, "+++ x" é CONTEÚDO, não cabeçalho
 }
 
