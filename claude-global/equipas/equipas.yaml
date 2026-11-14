@@ -1,0 +1,365 @@
+# Registo das equipas (Fase 0). Editado à mão; o gerador só lê.
+# Formato: subconjunto de YAML lido por gerador/yamlmini.py (falha fechada).
+# Fonte das regras: distribuir_equipas.py e classify.py da auditoria de 2026-11-05,
+# agency-commander/divisions.yaml e desenho-direcao-geral.md (secções 6, 7 e 9).
+# Slugs iguais aos ids de ~/.codex/jev-router/config/teams.yaml (reutilização no adaptador do JEV).
+# Ordem de decisão de cada item: 1) excecoes  2) prefixos  3) Direção Geral  4) sufixos de qualidade
+#                                5) Harness (Base ou Sistema)  6) Dados  7) funcoes  8) sem equipa.
+# excecoes: ids do snapshot de 2026-11-05 (têm de existir). excecoes_novas: decisões posteriores ao snapshot
+# (itens que só o disco de agora tem); podem não existir e não falham a verificação.
+# excluidos (fim do ficheiro): depois da verificação do desenho, saem de todas as listas publicadas.
+versao: 1
+desenho: "desenho-direcao-geral.md (aprovado pelo dono em 2026-11-07)"
+instantaneo: "entradas/auditoria-itens-2026-11-05.json"
+
+camadas:
+  base:
+    nome: "Base"
+    esperado_itens: 37
+    descricao: "Sempre ligada: app, memória, estilo, hooks gerais e de segurança. Não é uma equipa."
+  direcao-geral:
+    nome: "Direção Geral"
+    esperado_itens: 175
+    descricao: "Recebe pedidos e escolhe equipas. Traz as formas de trabalhar (175). Método: superpowers."
+    funcoes: ["Workflow e orquestração"]
+    prefixos: ["gsd-"]
+
+direcao_geral:
+  limites:
+    simples: 1
+    multidisciplinar_min: 2
+    multidisciplinar_max: 5
+    revisores_criticos: 1
+  revisores:
+    - "security-reviewer"
+    - "application-security-auditor"
+    - "code-reviewer"
+    - "silent-failure-hunter"
+    - "typescript-reviewer"
+    - "react-reviewer"
+    - "node-backend-reviewer"
+    - "python-reviewer"
+    - "web-design-reviewer"
+    - "database-platform-reviewer"
+
+regras:
+  funcao_harness: "Harness: skills, agentes, config, memória"
+  funcao_dados: "Dados e analytics"
+  dados_para: "operacoes"
+  harness_resto_para: "sistema"
+  qualidade_para: "qualidade"
+  qualidade_funcoes: ["Linguagens e frameworks", "Backend, APIs, dados e arquitetura", "Frontend e animação web"]
+  qualidade_sufixos: ["-reviewer", "-review", "-testing", "-test"]
+  base:
+    origens: ["App (embutido)"]
+    prefixos: ["artifact-", "anthropic-skills:artifact-", "caveman:", "ponytail:", "i-have-adhd:"]
+    contem: ["claude-mem"]
+    ids: ["memory", "superpowers:using-superpowers", "full-output-enforcement"]
+
+equipas:
+  - slug: marketing
+    nome: "Marketing & Growth"
+    skill: "equipa-marketing"
+    descricao: "Equipa Marketing & Growth: SEO, GEO, anúncios, CRO, copy e social. Chamar para atrair, converter ou comunicar."
+    traz: "SEO, GEO, anúncios, CRO, copy, social"
+    funcoes: ["SEO e GEO", "Marketing, copy e CRO"]
+    esperado:
+      itens: 129
+      usados: 75
+    hooks_previstos: ["confirmação antes de gastar créditos ou publicar"]
+    excecoes:
+      - "small-business:ad-manager"
+      - "small-business:brand-style"
+      - "small-business:canva-creator"
+      - "small-business:content-strategy"
+      - "small-business:growth-pulse"
+      - "small-business:marketing-monday"
+      - "small-business:review-reputation"
+      - "small-business:social-content-engine"
+  - slug: seguranca
+    nome: "Cibersegurança"
+    skill: "equipa-seguranca"
+    descricao: "Equipa Cibersegurança: auditorias, pentest e análise de vulnerabilidades. Chamar quando o alvo é a segurança em si."
+    traz: "auditorias, pentest, análise"
+    funcoes: ["Segurança e auditoria"]
+    esperado:
+      itens: 63
+      usados: 28
+    hooks_previstos: ["autorização antes de ferramentas de uso duplo"]
+  - slug: desenvolvimento
+    nome: "Desenvolvimento"
+    skill: "equipa-desenvolvimento"
+    descricao: "Equipa Desenvolvimento: frontend, backend, APIs, bases de dados e linguagens. Chamar para construir ou alterar código."
+    traz: "frontend, backend, APIs, bases de dados"
+    funcoes: ["Linguagens e frameworks", "Backend, APIs, dados e arquitetura", "Frontend e animação web", "Nichos específicos"]
+    esperado:
+      itens: 106
+      usados: 37
+    hooks_previstos: []
+    excecoes:
+      - "construcao"
+      - "codebase-onboarding-engineer"
+      - "minimal-change-engineer"
+      - "rapid-prototyper"
+      - "senior-developer"
+      - "code-explorer"
+      - "feature-dev:code-explorer"
+      - "feature-dev"
+      - "feature-dev:feature-dev"
+  - slug: design
+    nome: "Design & UX"
+    skill: "equipa-design"
+    descricao: "Equipa Design & UX: Figma, Stitch, interfaces, acessibilidade e animação. Chamar para desenhar ou rever interfaces."
+    traz: "Figma, Stitch, interfaces, animações"
+    funcoes: ["Design, UI e UX"]
+    esperado:
+      itens: 122
+      usados: 13
+    hooks_previstos: []
+    excecoes:
+      - "gsap-core"
+      - "gsap-frameworks"
+      - "gsap-performance"
+      - "gsap-plugins"
+      - "gsap-react"
+      - "gsap-scrolltrigger"
+      - "gsap-timeline"
+      - "gsap-utils"
+      - "image-to-code"
+      - "make-interfaces-feel-better"
+      - "motion-ui"
+      - "a11y-architect"
+      - "section-508-accessibility-specialist"
+      - "uswds-developer"
+      - "gsap-core-engineer"
+      - "gsap-framework-engineer"
+      - "image-to-interface-engineer"
+      - "motion-ui-engineer"
+      - "accessibility-auditor"
+      - "motion"
+  - slug: qualidade
+    nome: "Qualidade & Testes"
+    skill: "equipa-qualidade"
+    descricao: "Equipa Qualidade & Testes: QA, TDD, E2E, CodeRabbit e revisões de código. Chamar para verificar, testar ou rever trabalho feito."
+    traz: "QA, TDD, E2E, CodeRabbit, revisões de código"
+    funcoes: ["Qualidade: testes e code review"]
+    esperado:
+      itens: 100
+      usados: 39
+    hooks_previstos: []
+    excecoes:
+      - "playwright"
+      - "Claude_Code_iOS_Simulator"
+      - "healthcare-reviewer"
+  - slug: ia
+    nome: "IA & Agentes"
+    skill: "equipa-ia"
+    descricao: "Equipa IA & Agentes: LLM, RAG, evals, agentes e MCP. Chamar para construir funcionalidades com modelos de IA."
+    traz: "LLM, RAG, evals, agentes"
+    funcoes: ["IA, LLM e agentes (construir)"]
+    esperado:
+      itens: 26
+      usados: 10
+    hooks_previstos: []
+    excecoes:
+      - "small-business:build-agent"
+      - "small-business:build-connector"
+  - slug: multimedia
+    nome: "Multimédia"
+    skill: "equipa-multimedia"
+    descricao: "Equipa Multimédia: vídeo, imagem, 3D, three.js/WebGL, ffmpeg, Higgsfield e Remotion. Chamar para gerar, converter ou editar media e cenas 3D para a web."
+    traz: "vídeo, imagem, 3D, three.js, WebGL, ffmpeg, Higgsfield, Remotion"
+    funcoes: ["Imagem, vídeo e 3D"]
+    esperado:
+      itens: 76
+      usados: 16
+    hooks_previstos: ["confirmação antes de gastar créditos ou publicar"]
+    excecoes_novas:
+      - "brag:brag"
+      - "brag:brag-slim"
+      - "lemo-opuscar:lemo-opuscar"
+  - slug: ecommerce
+    nome: "E-commerce"
+    skill: "equipa-ecommerce"
+    descricao: "Equipa E-commerce: Shopify, catálogo, checkout e pagamentos. Chamar para lojas online e cobranças."
+    traz: "Shopify, catálogo, checkout, pagamentos"
+    funcoes: []
+    esperado:
+      itens: 11
+      usados: 3
+    hooks_previstos: []
+    excecoes:
+      - "small-business:inventory-planner"
+      - "small-business:restock"
+      - "plugin:small-business:shopify"
+      - "plugin:small-business:paypal"
+      - "plugin:small-business:square"
+      - "plugin:small-business:stripe"
+      - "plugin:small-business:wix"
+      - "Shopify"
+      - "drupal-shopping-cart-engineer"
+      - "wordpress-shopping-cart-engineer"
+      - "payments-billing-engineer"
+  - slug: vendas
+    nome: "Vendas & CRM"
+    skill: "equipa-vendas"
+    descricao: "Equipa Vendas & CRM: leads, prospeção, CRM e outreach. Chamar para o pipeline comercial."
+    traz: "leads, prospeção, CRM, outreach"
+    funcoes: ["Vendas e CRM"]
+    esperado:
+      itens: 60
+      usados: 4
+    hooks_previstos: []
+    excecoes:
+      - "small-business:call-list"
+      - "small-business:crm-autopilot"
+      - "small-business:grow-pipeline"
+      - "small-business:lead-finder"
+      - "small-business:lead-triage"
+      - "small-business:outreach-composer"
+      - "small-business:proposal-builder"
+      - "small-business:reactivate"
+      - "small-business:speed-to-lead"
+      - "plugin:small-business:zoho-crm"
+    excecoes_novas:
+      - "plugin:small-business:apollo-io"
+      - "plugin:small-business:clay"
+  - slug: infraestrutura
+    nome: "Infraestrutura"
+    skill: "equipa-infraestrutura"
+    descricao: "Equipa Infraestrutura: GitHub, Vercel, Docker, deploy e redes. Chamar para publicar, alojar ou operar serviços."
+    traz: "GitHub, Vercel, Docker, deploy"
+    funcoes: ["DevOps, deploy e infraestrutura"]
+    esperado:
+      itens: 45
+      usados: 16
+    hooks_previstos: ["confirmação de push e deploy"]
+    excecoes:
+      - "iot-fleet-engineer"
+    excecoes_novas:
+      - "plugin:hostinger:hostinger"
+  - slug: pesquisa
+    nome: "Pesquisa"
+    skill: "equipa-pesquisa"
+    descricao: "Equipa Pesquisa: extração de conteúdo, pesquisa web e notícias, Context.dev (web-scrape, web-search), Context7 e Apify. Chamar para recolher fontes e artigos."
+    traz: "research, Context.dev, Context7, browser, Apify"
+    funcoes: ["Pesquisa e documentação", "Browser e automação"]
+    esperado:
+      itens: 21
+      usados: 15
+    hooks_previstos: []
+    excecoes:
+      - "trend-researcher"
+    excecoes_novas:
+      - "plugin:context7-plugin:context7"
+  - slug: blockchain
+    nome: "Blockchain"
+    skill: "equipa-blockchain"
+    descricao: "Equipa Blockchain: Solana, Helius, contratos e DeFi. Chamar para trabalho on-chain, sempre com os guards."
+    traz: "Solana, Helius, contratos, DeFi"
+    funcoes: ["Crypto e blockchain"]
+    prefixos: ["building-secure-contracts:"]
+    esperado:
+      itens: 31
+      usados: 13
+    hooks_previstos: ["guards obrigatórios: mainnet, wallet, secret, transaction"]
+    excecoes:
+      - "defi-amm-security"
+      - "blockchain-security-auditor"
+      - "crypto-protocol-auditor"
+  - slug: reversa
+    nome: "Engenharia reversa"
+    skill: "equipa-reversa"
+    descricao: "Equipa Engenharia reversa: Ghidra, REA e análise de apps. Chamar para analisar binários, apps ou sites."
+    traz: "Ghidra, REA, análise de apps"
+    funcoes: ["Engenharia reversa"]
+    esperado:
+      itens: 3
+      usados: 2
+    hooks_previstos: []
+  - slug: operacoes
+    nome: "Operações & Documentos"
+    skill: "equipa-operacoes"
+    descricao: "Equipa Operações & Documentos: documentos, produtividade, relatórios e dados. Chamar para office, relatórios e análise de dados."
+    traz: "documentos, produtividade, relatórios, dados"
+    funcoes: ["Documentos e produtividade", "Negócio, e-commerce e gestão"]
+    esperado:
+      itens: 94
+      usados: 4
+    hooks_previstos: []
+    excecoes:
+      - "update-codemaps"
+      - "update-docs"
+      - "doc-updater"
+      - "technical-writer"
+      - "plugin:small-business:zapier"
+  - slug: sistema
+    nome: "Sistema"
+    skill: "equipa-sistema"
+    descricao: "Equipa Sistema: hooks, skills, agentes, plugins e configuração do próprio Claude Code. Chamar para mexer na infraestrutura do Claude."
+    traz: "hooks, skills, agentes, plugins, configuração"
+    funcoes: []
+    esperado:
+      itens: 45
+      usados: 14
+    hooks_previstos: []
+
+# Itens que servem mais de uma equipa. A equipa primária mantém a contagem; as outras só os listam.
+partilhados:
+  - item: "context7"
+    tambem_em: ["desenvolvimento", "ia", "blockchain"]
+    razao: "Documentação de bibliotecas serve quem escreve código."
+  - item: "Context7"
+    tambem_em: ["desenvolvimento", "ia", "blockchain"]
+    razao: "Conector duplicado do context7; a Fase 3 decide qual fica."
+  - item: "agent-browser"
+    tambem_em: ["qualidade", "design"]
+    razao: "E2E e verificação visual precisam de browser."
+  - item: "claude-in-chrome"
+    tambem_em: ["qualidade", "design"]
+    razao: "Browser real do utilizador, para verificar sites e logins."
+  - item: "Claude_Browser"
+    tambem_em: ["qualidade", "design"]
+    razao: "Browser interno da app, para verificar sites."
+  - item: "Figma"
+    tambem_em: ["desenvolvimento"]
+    razao: "Design para código."
+  - item: "Vercel"
+    tambem_em: ["desenvolvimento"]
+    razao: "Deploys de projetos web."
+  - item: "Supabase"
+    tambem_em: ["infraestrutura"]
+    razao: "Bases de dados e funções alojadas."
+  - item: "vibesec"
+    tambem_em: ["desenvolvimento", "qualidade", "design"]
+    razao: "Rede de segurança: corre no fecho de qualquer código."
+  - item: "VibeSec-Skill"
+    tambem_em: ["desenvolvimento", "qualidade", "design"]
+    razao: "Escrita segura de aplicações web, em qualquer equipa que escreva código."
+  - item: "Snyk Security"
+    tambem_em: ["desenvolvimento", "infraestrutura"]
+    razao: "Dependências, contentores e IaC."
+  - item: "rea"
+    tambem_em: ["seguranca"]
+    razao: "Análise de binários serve auditorias."
+  - item: "Apify"
+    tambem_em: ["marketing", "vendas"]
+    razao: "Scraping de anúncios, leads e concorrência."
+  - item: "Canva"
+    tambem_em: ["marketing"]
+    razao: "Peças para social e anúncios."
+  - item: "higgsfield"
+    tambem_em: ["marketing"]
+    razao: "Criativos para anúncios (gasta créditos)."
+  - item: "higgsfield (claude.ai)"
+    tambem_em: ["marketing"]
+    razao: "Conector duplicado do higgsfield (gasta créditos)."
+  - item: "nano-banana-mcp"
+    tambem_em: ["marketing"]
+    razao: "Imagens para campanhas."
+
+# Fora de todas as equipas por decisão do dono (2026-11-09). A verificação do desenho conta-os na equipa das regras;
+# as listas publicadas (SKILL.md, sem-uso.md, partilhados) não os mostram e o relatório lista-os com o motivo.
+# Motivo obrigatório. Podem não existir: um excluído que falte é só aviso. Não podem estar em partilhados.
+# playwright voltou às equipas em 2026-11-09 (o dono desbloqueou-o).
+excluidos: []

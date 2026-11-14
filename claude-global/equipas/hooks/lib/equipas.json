@@ -1,0 +1,92 @@
+[
+ {
+  "slug": "marketing",
+  "nome": "Marketing & Growth",
+  "descricao": "Equipa Marketing & Growth: SEO, GEO, anúncios, CRO, copy e social. Chamar para atrair, converter ou comunicar.",
+  "skill": "equipa-marketing"
+ },
+ {
+  "slug": "seguranca",
+  "nome": "Cibersegurança",
+  "descricao": "Equipa Cibersegurança: auditorias, pentest e análise de vulnerabilidades. Chamar quando o alvo é a segurança em si.",
+  "skill": "equipa-seguranca"
+ },
+ {
+  "slug": "desenvolvimento",
+  "nome": "Desenvolvimento",
+  "descricao": "Equipa Desenvolvimento: frontend, backend, APIs, bases de dados e linguagens. Chamar para construir ou alterar código.",
+  "skill": "equipa-desenvolvimento"
+ },
+ {
+  "slug": "design",
+  "nome": "Design & UX",
+  "descricao": "Equipa Design & UX: Figma, Stitch, interfaces, acessibilidade e animação. Chamar para desenhar ou rever interfaces.",
+  "skill": "equipa-design"
+ },
+ {
+  "slug": "qualidade",
+  "nome": "Qualidade & Testes",
+  "descricao": "Equipa Qualidade & Testes: QA, TDD, E2E, CodeRabbit e revisões de código. Chamar para verificar, testar ou rever trabalho feito.",
+  "skill": "equipa-qualidade"
+ },
+ {
+  "slug": "ia",
+  "nome": "IA & Agentes",
+  "descricao": "Equipa IA & Agentes: LLM, RAG, evals, agentes e MCP. Chamar para construir funcionalidades com modelos de IA.",
+  "skill": "equipa-ia"
+ },
+ {
+  "slug": "multimedia",
+  "nome": "Multimédia",
+  "descricao": "Equipa Multimédia: vídeo, imagem, 3D, three.js/WebGL, ffmpeg, Higgsfield e Remotion. Chamar para gerar, converter ou editar media e cenas 3D para a web.",
+  "skill": "equipa-multimedia"
+ },
+ {
+  "slug": "ecommerce",
+  "nome": "E-commerce",
+  "descricao": "Equipa E-commerce: Shopify, catálogo, checkout e pagamentos. Chamar para lojas online e cobranças.",
+  "skill": "equipa-ecommerce"
+ },
+ {
+  "slug": "vendas",
+  "nome": "Vendas & CRM",
+  "descricao": "Equipa Vendas & CRM: leads, prospeção, CRM e outreach. Chamar para o pipeline comercial.",
+  "skill": "equipa-vendas"
+ },
+ {
+  "slug": "infraestrutura",
+  "nome": "Infraestrutura",
+  "descricao": "Equipa Infraestrutura: GitHub, Vercel, Docker, deploy e redes. Chamar para publicar, alojar ou operar serviços.",
+  "skill": "equipa-infraestrutura"
+ },
+ {
+  "slug": "pesquisa",
+  "nome": "Pesquisa",
+  "descricao": "Equipa Pesquisa: extração de conteúdo, pesquisa web e notícias, Context.dev (web-scrape, web-search), Context7 e Apify. Chamar para recolher fontes e artigos.",
+  "skill": "equipa-pesquisa"
+ },
+ {
+  "slug": "blockchain",
+  "nome": "Blockchain",
+  "descricao": "Equipa Blockchain: Solana, Helius, contratos e DeFi. Chamar para trabalho on-chain, sempre com os guards.",
+  "skill": "equipa-blockchain"
+ },
+ {
+  "slug": "reversa",
+  "nome": "Engenharia reversa",
+  "descricao": "Equipa Engenharia reversa: Ghidra, REA e análise de apps. Chamar para analisar binários, apps ou sites.",
+  "skill": "equipa-reversa"
+ },
+ {
+  "slug": "operacoes",
+  "nome": "Operações & Documentos",
+  "descricao": "Equipa Operações & Documentos: documentos, produtividade, relatórios e dados. Chamar para office, relatórios e análise de dados.",
+  "skill": "equipa-operacoes"
+ },
+ {
+  "slug": "sistema",
+  "nome": "Sistema",
+  "descricao": "Equipa Sistema: hooks, skills, agentes, plugins e configuração do próprio Claude Code. Chamar para mexer na infraestrutura do Claude.",
+  "skill": "equipa-sistema"
+ }
+]
