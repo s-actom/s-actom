@@ -63,11 +63,18 @@ jobs:
 
       - name: Guarda dos patches a agentes de terceiros (bash)
         if: hashFiles('claude-global/agents/security/blockchain-security-auditor.md') != ''
+          || hashFiles('claude-global/agents/security/penetration-tester.md') != ''
+          || hashFiles('claude-global/agents/engineering/incident-response-commander.md') != ''
+          || hashFiles('claude-global/agents/engineering/multi-agent-systems-architect.md') != ''
         run: bash claude-global/testes-agentes.sh
 
       - name: Instalação e recuperação numa instalação isolada (bash)
         if: hashFiles('claude-global/instalar.sh') != ''
         run: bash claude-global/teste-instalacao.sh
+
+      - name: Testes — aplicador limitado ao manifesto (bash)
+        if: hashFiles('claude-global/teste-aplicar.sh') != ''
+        run: bash claude-global/teste-aplicar.sh
 
       - name: Testes — validar.sh (bash)
         if: hashFiles('claude-global/validar.test.sh') != ''

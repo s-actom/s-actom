@@ -77,40 +77,50 @@ def frontmatter_ok(nome: str, dados: bytes) -> bool:
 def sincronizar(origem: Path) -> tuple:
     inst = ler_instalado()
     mudou = recusados = 0
-    for d in sorted(origem.iterdir()):
-        alvo_dir = SKILLS / d.name
-        if not NOME_OK.match(d.name) or not d.is_dir() or not alvo_dir.is_dir() or alvo_dir.is_symlink():
-            continue  # só skills que a Fase 1 instalou
-        for f in sorted(d.iterdir()):
-            if not FICH_OK.match(f.name) or not f.is_file() or f.is_symlink():
-                continue
-            rel = f"{d.name}/{f.name}"
-            novo = f.read_bytes()
-            alvo = alvo_dir / f.name
-            atual = sha(alvo.read_bytes()) if alvo.is_file() and not alvo.is_symlink() else None
-            if atual == sha(novo):
-                inst[rel] = atual
-                continue
-            if alvo.exists() and (alvo.is_symlink() or inst.get(rel) != atual):
-                continue  # mudado à mão: não se pisa
-            if f.name == "SKILL.md" and not frontmatter_ok(d.name, novo):
-                recusados += 1
-                continue  # frontmatter desconhecido (ex.: hooks): não se publica sem revisão
-            if not MARCA.exists():
-                return mudou, recusados  # reversão a meio
-            # Reconferir AGORA: o dono pode ter gravado o ficheiro entre a leitura (Line 90) e aqui.
-            antes_de_escrever = sha(alvo.read_bytes()) if alvo.is_file() and not alvo.is_symlink() else None
-            if antes_de_escrever != atual:
-                continue  # mudou durante a geração: preserva a versão do dono
-            escrever_atomico(alvo, novo, 0o644)
-            inst[rel] = sha(novo)
-            mudou += 1
-
-    def gravar_registo() -> None:
+    interrompido = False
+    try:
+        for d in sorted(origem.iterdir()):
+            alvo_dir = SKILLS / d.name
+            if not NOME_OK.match(d.name) or not d.is_dir() or not alvo_dir.is_dir() or alvo_dir.is_symlink():
+                continue  # só skills que a Fase 1 instalou
+            for f in sorted(d.iterdir()):
+                if not FICH_OK.match(f.name) or not f.is_file() or f.is_symlink():
+                    continue
+                rel = f"{d.name}/{f.name}"
+                novo = f.read_bytes()
+                alvo = alvo_dir / f.name
+                atual = sha(alvo.read_bytes()) if alvo.is_file() and not alvo.is_symlink() else None
+                if atual == sha(novo):
+                    inst[rel] = atual
+                    continue
+                if alvo.exists() and (alvo.is_symlink() or inst.get(rel) != atual):
+                    continue  # mudado à mão: não se pisa
+                if f.name == "SKILL.md" and not frontmatter_ok(d.name, novo):
+                    recusados += 1
+                    continue  # frontmatter desconhecido (ex.: hooks): não se publica sem revisão
+                if not MARCA.exists():
+                    interrompido = True  # reversão a meio: sai do ciclo, mas grava o que já publicou
+                    break
+                # Reconferir AGORA: o dono pode ter gravado o ficheiro entre a leitura e aqui.
+                antes_de_escrever = sha(alvo.read_bytes()) if alvo.is_file() and not alvo.is_symlink() else None
+                if antes_de_escrever != atual:
+                    continue  # mudou durante a geração: preserva a versão do dono
+                try:
+                    escrever_atomico(alvo, novo, 0o644)
+                except OSError:
+                    recusados += 1  # falha de escrita: não conta como publicado
+                    continue
+                inst[rel] = sha(novo)
+                mudou += 1
+            if interrompido:
+                break
+    finally:
+        # O registo tem de refletir o que foi REALMENTE publicado, mesmo que o ciclo pare ou
+        # falhe a meio. Um registo atrasado faz a sincronização seguinte pisar trabalho do dono:
+        # o destino já não casa com o registo e o ficheiro passaria por "mudado à mão" — ou,
+        # no sentido inverso, o hash antigo autorizaria a substituição.
         linhas = "".join(f"{h}  {rel}\n" for rel, h in sorted(inst.items()))
         escrever_atomico(INST, linhas.encode("utf-8"), 0o600)
-
-    gravar_registo()
     return mudou, recusados
 
 

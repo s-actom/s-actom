@@ -137,6 +137,41 @@ class TestPublicacao(unittest.TestCase):
                 self.assertEqual(atual, dono, "a gravação do dono foi perdida")
                 self.assertEqual(mudou, 0, "nada devia ter sido publicado")
 
+    def test_registo_reflete_a_publicacao_parcial(self):
+        """Regressão (CodeRabbit PR #1): se uma gravação falhar a meio do ciclo, o registo
+        `instalado.sha256` tem de refletir o que ficou REALMENTE publicado.
+
+        Sem isto, o registo ficava com o hash antigo para o ficheiro já publicado: a
+        sincronização seguinte via `inst.get(rel) != atual`, concluía "mudado à mão" e
+        deixava de atualizar essa skill para sempre."""
+        with tempfile.TemporaryDirectory() as tmp:
+            t = Path(tmp)
+            antigos = {"equipa-ia": skill("equipa-ia"), "equipa-sistema": skill("equipa-sistema")}
+            novos = {n: skill(n) + b"novo\n" for n in antigos}
+            with instalacao(t, antigos, novos):
+                original = atualizar.escrever_atomico
+                alvos = []
+
+                def falha_no_segundo(alvo, dados, modo):
+                    if Path(alvo).name == "SKILL.md":
+                        alvos.append(Path(alvo))
+                        if len(alvos) == 2:
+                            raise OSError("falha injetada na segunda gravação")
+                    return original(alvo, dados, modo)
+
+                atualizar.escrever_atomico = falha_no_segundo
+                try:
+                    mudou, recusados = atualizar.sincronizar(t / "origem")
+                finally:
+                    atualizar.escrever_atomico = original
+
+            self.assertEqual(len(alvos), 2, "o teste não injetou a falha na segunda gravação")
+            self.assertEqual((mudou, recusados), (1, 1))
+            publicada = alvos[0]
+            registo = (t / "estado" / "instalado.sha256").read_text()
+            self.assertIn(f"{atualizar.sha(publicada.read_bytes())}  {publicada.parent.name}/SKILL.md",
+                          registo, "o registo ficou com o hash antigo do ficheiro já publicado")
+
     def test_sincronizar_tira_o_guarda_antigo_das_equipas_vigiadas(self):
         # Migração do M1: as skills instaladas com o bloco antigo (e registadas) passam a sair sem ele; as outras ficam.
         vigiadas = sorted(e["skill"] for e in REGISTO["equipas"] if e.get("hooks_previstos"))

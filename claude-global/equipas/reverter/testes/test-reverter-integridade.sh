@@ -116,5 +116,32 @@ reverter --aplicar >"$T/out-e.txt" 2>&1; RC=$?
 [ "$RC" -eq 0 ] && ok "e) reversão conclui (exit 0)" || { ko "e) exit $RC: skill alheia deixou a reversão pendente"; sed -n '1,6p' "$T/out-e.txt"; }
 [ ! -f "$BASE/FASE-1-ATIVA" ] && ok "e) marca removida" || ko "e) marca ficou"
 
+# --- (f) o dono grava DURANTE a reversão: o mv não pode pisar essa escrita ---
+# Injeção determinística: um shasum falso altera o destino na 2.ª leitura do ficheiro — a
+# leitura de decisão é a 1.ª, a reconferência imediatamente antes do mv é a 2.ª.
+montar
+mkdir -p "$T/bin"
+cat >"$T/bin/shasum" <<'EOF'
+#!/usr/bin/env bash
+last=""; for a in "$@"; do last="$a"; done
+if [ -n "${ALVO_DONO:-}" ] && [ "$last" = "$ALVO_DONO" ]; then
+  c=$(cat "$CTR" 2>/dev/null || echo 0); c=$((c + 1)); echo "$c" >"$CTR"
+  if [ "$c" -eq 2 ]; then printf '%s' "$DONO_CONTEUDO" >"$last"; fi
+fi
+exec /usr/bin/shasum "$@"
+EOF
+chmod +x "$T/bin/shasum"
+DONO_CONTEUDO='# CLAUDE editado pelo dono durante a reversão
+'
+rm -f "$T/ctr"
+PATH="$T/bin:$PATH" ALVO_DONO="$C/CLAUDE.md" CTR="$T/ctr" DONO_CONTEUDO="$DONO_CONTEUDO" \
+  reverter --aplicar >"$T/out-f.txt" 2>&1; RC=$?
+DONO_SHA=$(printf '%s' "$DONO_CONTEUDO" | shasum -a 256 | cut -d' ' -f1)
+if [ "$(sha "$C/CLAUDE.md")" = "$DONO_SHA" ]; then ok "f) escrita do dono durante a reversão preservada"
+else ko "f) a reversão pisou a escrita feita durante a reversão"; fi
+grep -qi "mudou durante a reversão" "$T/out-f.txt" && ok "f) reporta a reconferência" || ko "f) não reporta a reconferência"
+[ "$RC" -eq 1 ] && ok "f) sai 1 (reversão pendente)" || ko "f) código $RC, esperado 1"
+[ ! -e "$C/CLAUDE.md.fase1.tmp" ] && ok "f) sem temporário residual" || ko "f) temporário ficou para trás"
+
 echo
 if [ "$FALHAS" -eq 0 ]; then echo "TODOS OK"; exit 0; else echo "$FALHAS falha(s)"; exit 1; fi

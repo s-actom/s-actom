@@ -35,13 +35,31 @@ PENDENTE=0
 diz() { echo "  $*"; }
 antes() { awk -v r="./$1" '$2 == r {print $1}' "$B/ANTES.sha256"; }
 depois() { [ -f "$B/DEPOIS.sha256" ] && awk -v r="./$1" '$2 == r {print $1}' "$B/DEPOIS.sha256"; }
-repor_copia() { # cópia do backup, verificada ANTES de publicar (nunca substitui por lixo)
-  local tmp="$C/$1.fase1.tmp" esperado
+repor_copia() { # $1=rel $2=hash do destino que justificou repor — cópia do backup, verificada ANTES de publicar
+  local tmp="$C/$1.fase1.tmp" esperado agora
   esperado=$(antes "$1")
   [ -n "$esperado" ] || return 1
   cp -p "$B/ficheiros/$1" "$tmp" || return 1
   [ "$(sha "$tmp")" = "$esperado" ] || { rm -f -- "$tmp"; return 1; }
+  # Reconferir o DESTINO imediatamente antes do mv: entre a decisão de repor e este ponto o
+  # dono pode ter gravado o ficheiro. Sem esta reconferência o rollback pisava essa escrita.
+  # O código 3 distingue "mudou entretanto" de "falhou a copiar".
+  agora=$(sha "$C/$1")
+  [ "$agora" = "$2" ] || { rm -f -- "$tmp"; return 3; }
   mv -f -- "$tmp" "$C/$1"
+}
+
+# repor_e_dizer <rel> <hash do destino no momento da decisão>
+# 0 reposto · 3 o destino mudou durante a reversão · 1 outra falha. Marca PENDENTE.
+repor_e_dizer() {
+  local rc=0
+  repor_copia "$1" "$2" || rc=$?
+  case "$rc" in
+    0) diz "$1: reposto do backup (byte a byte)" ;;
+    3) diz "$1: mudou durante a reversão; não foi tocado (reversão pendente)"; PENDENTE=1 ;;
+    *) diz "$1: FALHOU a reposição"; PENDENTE=1 ;;
+  esac
+  return "$rc"
 }
 
 # Não deixar o refrescamento em segundo plano escrever enquanto se reverte
@@ -58,7 +76,7 @@ echo "Fase 1: backup $REL"
 f=settings.json; cur=$(sha "$C/$f")
 if [ "$cur" = "$(antes "$f")" ]; then diz "$f: já está como antes"
 elif [ "$cur" = "$(depois "$f")" ]; then
-  if [ "$MODO" = aplicar ]; then repor_copia "$f" && diz "$f: reposto do backup (byte a byte)" || { diz "$f: FALHOU a reposição"; PENDENTE=1; }
+  if [ "$MODO" = aplicar ]; then repor_e_dizer "$f" "$cur"
   else diz "$f: seria reposto do backup"; fi
 else
   if [ "$MODO" = aplicar ]; then
@@ -67,9 +85,11 @@ else
       def nosso: (.command // "") | contains($hk);
       .hooks |= (with_entries(.value |= ([.[] | .hooks |= map(select(nosso | not)) | select(.hooks | length > 0)]))
                  | with_entries(select(.value | length > 0)))
-    ' "$C/$f" >"$C/$f.fase1.tmp" && jq -e 'type == "object"' "$C/$f.fase1.tmp" >/dev/null && chmod "$m" "$C/$f.fase1.tmp" && mv "$C/$f.fase1.tmp" "$C/$f" \
+    ' "$C/$f" >"$C/$f.fase1.tmp" && jq -e 'type == "object"' "$C/$f.fase1.tmp" >/dev/null && chmod "$m" "$C/$f.fase1.tmp" \
+      && [ "$(sha "$C/$f")" = "$cur" ] \
+      && mv "$C/$f.fase1.tmp" "$C/$f" \
       && diz "$f: mudaste-o depois da ativação; tirei só os hooks da Fase 1, o resto ficou" \
-      || { rm -f "$C/$f.fase1.tmp"; diz "$f: FALHOU a remoção dos hooks"; PENDENTE=1; }
+      || { rm -f "$C/$f.fase1.tmp"; diz "$f: FALHOU a remoção dos hooks (ou mudou durante a reversão)"; PENDENTE=1; }
   else diz "$f: mudou depois da ativação; sairiam só os hooks da Fase 1"; fi
 fi
 
@@ -78,7 +98,7 @@ for par in "CLAUDE.md claude" "skills/agency-commander/SKILL.md commander"; do
   set -- $par; f=$1; pre=$2; cur=$(sha "$C/$f")
   if [ "$cur" = "$(antes "$f")" ]; then diz "$f: já está como antes"
   elif [ "$cur" = "$(depois "$f")" ]; then
-    if [ "$MODO" = aplicar ]; then repor_copia "$f" && diz "$f: reposto do backup (byte a byte)" || { diz "$f: FALHOU a reposição"; PENDENTE=1; }
+    if [ "$MODO" = aplicar ]; then repor_e_dizer "$f" "$cur"
     else diz "$f: seria reposto do backup"; fi
   elif [ "$MODO" = aplicar ]; then
     if python3 -I "$BASE/reverter/troca.py" desfazer "$C/$f" "$B/pares" "$pre"; then diz "$f: mudaste-o depois da ativação; desfiz só as trocas da Fase 1"
