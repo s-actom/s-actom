@@ -48,6 +48,14 @@ agents/security/penetration-tester.md
 agents/engineering/incident-response-commander.md
 agents/engineering/multi-agent-systems-architect.md
 testes-agentes.sh
+equipas/modelos/autorizacao.json
+equipas/modelos/descobrir.py
+equipas/modelos/README.md
+equipas/hooks/lib/modelos.mjs
+equipas/hooks/modelo-executado.mjs
+equipas/hooks/registo-equipa.mjs
+equipas/hooks/tests/modelos.test.mjs
+equipas/gerador/tests/test_descobrir.py
 "
 
 FALTA=0
