@@ -123,8 +123,10 @@ fi
 
 # 2. Backup + verificação de conflitos, ficheiro a ficheiro.
 CONFLITOS=0; APLICADOS=0; CRIADOS=0; SALTADOS=0
-: >"$BK/aplicado.tsv" 2>/dev/null || true
-: >"$BK/ANTES.sha256" 2>/dev/null || true
+if [ "$ENSAIO" = 0 ]; then
+  : >"$BK/aplicado.tsv" || erro "sem escrita no backup"
+  : >"$BK/ANTES.sha256" || erro "sem escrita no backup"
+fi
 
 while IFS=$'\t' read -r rel orig esp corr; do
   case "$rel" in ''|'#'*) continue ;; esac
