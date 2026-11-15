@@ -37,6 +37,10 @@ jobs:
         if: hashFiles('claude-global/equipas/hooks/tests/portao-modo.test.mjs') != ''
         run: cd claude-global/equipas/hooks && node --test tests/portao-modo.test.mjs
 
+      - name: Testes — Adaptive Model Intelligence (node)
+        if: hashFiles('claude-global/equipas/hooks/tests/modelos.test.mjs') != ''
+        run: cd claude-global/equipas/hooks && node --test tests/modelos.test.mjs
+
       - name: Testes — context-handoff (node)
         if: hashFiles('claude-global/hooks/context-handoff.test.js') != ''
         run: cd claude-global && node --test hooks/context-handoff.test.js
