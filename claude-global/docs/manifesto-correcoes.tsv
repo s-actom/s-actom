@@ -1,4 +1,4 @@
-# Manifesto de aplicação — gerado por gerar-manifesto.sh em 2026-11-15 19:57:50 +0100
+# Manifesto de aplicação — gerado por gerar-manifesto.sh em 2026-11-15 20:26:31 +0100
 # destino de referência: /Users/goncaloferro/.claude
 # rel<TAB>hash_original<TAB>hash_esperado_antes<TAB>hash_corrigido
 # hash_original = destino aquando da geração ('-' = não existia); hash_esperado_antes = exigido
@@ -20,4 +20,12 @@ agents/security/blockchain-security-auditor.md	994418101b4084b8187bc3aa0cdba22ed
 agents/security/penetration-tester.md	3a79208fe2201d79d51bc64c70c14cc27b418a3b51d887761ac5eb6624411a34	bbb4ab1ddcff4f3f1fb6f2e309852cd0e3582013bdf51001aa7fc85de89695f4	bbb4ab1ddcff4f3f1fb6f2e309852cd0e3582013bdf51001aa7fc85de89695f4
 agents/engineering/incident-response-commander.md	8391afc4b4af5aeb80a44be66eb0b31d2d8495d96b8f8a9bb44c596d379d32cf	51d5b49e6e541b989b4dd5f0aa903b7e1bbcd8ced0fa21a8e9906c8a68356783	51d5b49e6e541b989b4dd5f0aa903b7e1bbcd8ced0fa21a8e9906c8a68356783
 agents/engineering/multi-agent-systems-architect.md	1368caadfd76d10efbf14843c5c1d89ad56ea00f47710c94c3dfe658c823d751	7535286cc38d10c92ea25a52df150b0fcde4ed7362a4cc6f655385bc6923361b	7535286cc38d10c92ea25a52df150b0fcde4ed7362a4cc6f655385bc6923361b
-testes-agentes.sh	-	065cf9c93fc0df09a9e249193bfd73cdc5fd18e187c0955e891a7b6b1c7f1e0a	3df7987945ebaf637ea866d211be2d98f229aab222c46ea612e70555c0c01dea
+testes-agentes.sh	-	3df7987945ebaf637ea866d211be2d98f229aab222c46ea612e70555c0c01dea	3df7987945ebaf637ea866d211be2d98f229aab222c46ea612e70555c0c01dea
+equipas/modelos/autorizacao.json	-	-	fa9be4a3098fd521aa52ac5215023208a59bbfad0fc8bc7ac8c38b543bb7169c
+equipas/modelos/descobrir.py	-	-	6286251992cbf01188600c44301210754855d16a089ab64a4b4685542e26447b
+equipas/modelos/README.md	-	-	ca0ab78d9a23d9f4c5708566b9979daff1ff595c4848f71e88e9abc3c73aa0e1
+equipas/hooks/lib/modelos.mjs	-	-	ae97ebbf4121015c537c9b2878c1db426be0875697dd743dbb22aa571c08d9b3
+equipas/hooks/modelo-executado.mjs	-	-	c28dde5ae2ec5d116e9e8ffe0839c2d0c766ae15897219b1aa3b9c47bc72ceed
+equipas/hooks/registo-equipa.mjs	d66020f0913cf6252d461fd2c0ef86d5dd7b19cd24278bbab69d3073202a8ad1	d66020f0913cf6252d461fd2c0ef86d5dd7b19cd24278bbab69d3073202a8ad1	eb64521067859ee93f2725ddc8126dd3ff4b17a712c972eca22246c8995cb189
+equipas/hooks/tests/modelos.test.mjs	-	-	480ea8f7f3faf21a9f2c7a04a5193b4774a48a22aa9c2c9be5db8cef9036bce8
+equipas/gerador/tests/test_descobrir.py	-	-	76e1dc83aee6cd77347f8bb73868358b8437090e630fdfde792d32b20a938d92
