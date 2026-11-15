@@ -26,6 +26,18 @@ versionadas neste repositório — vêm de instalação/plugin local (ver
 silêncio (só há aviso com `--debug`), pelo que o preload deve ser confirmado com
 `claude --debug` antes de se confiar nele.
 
+## Delegação quando corre como subagente
+
+A allowlist `tools:` do frontmatter só é aplicada quando este agente é a thread principal
+(`claude --agent auditoria`). Invocado como subagente (`Task`/`Agent`), o harness não a impõe,
+por isso este corpo tem de repetir a restrição:
+
+- Delegar apenas nos revisores nomeados na allowlist; qualquer outro destino é recusado.
+- Não escrever, editar nem executar comandos que alterem estado: só leitura.
+- Os revisores sem definição nesta exportação vêm do catálogo `agency-agents`; a origem de
+  cada um está em [docs/DEPENDENCIAS.md](../docs/DEPENDENCIAS.md). Se a delegação falhar,
+  registá-lo no veredito em vez de assumir que o revisor correu.
+
 ## Função
 
 Realizar análise independente, read-only e adversarial. Este agente não implementa correções; coordena apenas revisores read-only dentro da allowlist declarada.

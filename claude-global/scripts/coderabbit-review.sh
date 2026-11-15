@@ -133,7 +133,7 @@ SAFE_NAME_RE='\.env\.(example|sample|template|dist)$'
 PAT_NAMES=(private-key aws-access-key github-token gitlab-token slack-token stripe-live-key google-api-key openai-anthropic-key jwt)
 PAT_RES=(
   '-----BEGIN [A-Z ]*PRIVATE KEY-----'
-  'AKIA[0-9A-Z]{16}'
+  '(AKIA|ASIA)[0-9A-Z]{16}'
   'gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{40,}'
   'glpat-[A-Za-z0-9_-]{20,}'
   'xox[abprs]-[A-Za-z0-9-]{10,}'
@@ -205,13 +205,20 @@ esac
 # Passar --config desliga a descoberta de config da CLI. Repo com config própria (nomes e ordem
 # da CLI): não se passa nada e ela aplica-se tal como está. Sem config: instruções globais.
 REPO_CONFIG=""
+REPO_CONFIG_HEAD=""
 for n in .coderabbit.yaml .coderabbit.yml coderabbit.yaml coderabbit.yml .coderabbit.config.ts; do
   for d in "${DIR_ABS:-$ROOT}" "$ROOT"; do
     [ -f "$d/$n" ] && { REPO_CONFIG="$d/$n"; break 2; }
+    # Config que existe no commit revisto mas foi removida do working tree: `-f` não a vê.
+    # Passar --config global aqui sobrepunha as instruções globais às do repo que a CLI
+    # encontraria em HEAD; sem --config é a CLI que aplica a do repo.
+    git -C "$d" cat-file -e "HEAD:$n" 2>/dev/null && { REPO_CONFIG_HEAD="$n"; break 2; }
   done
 done
 if [ -n "$REPO_CONFIG" ]; then
   echo "config do repo: $REPO_CONFIG (instruções globais não aplicadas)" >&2
+elif [ -n "$REPO_CONFIG_HEAD" ]; then
+  echo "config do repo: $REPO_CONFIG_HEAD (em HEAD, ausente no working tree; a CLI aplica-a)" >&2
 elif [ -n "$GLOBAL_CONFIG" ]; then
   # --config é variádico: tem de ficar no fim dos argumentos.
   if [ -f "$GLOBAL_CONFIG" ]; then set -- "$@" --config "$GLOBAL_CONFIG"

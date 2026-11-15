@@ -102,4 +102,23 @@ out=$( run "$r" "$G"; echo "rc=$?" )
 if printf '%s' "$out" | grep -q 'rc=3'; then ok "linha '+++ ...' dentro do hunk é conteúdo (bloqueia)"
 else ko "linha '+++ ...' foi tratada como cabeçalho e escapou"; fi
 
+# --- Regressão: 4.ª review do CodeRabbit no PR #2 ----------------------------
+# (e) credenciais temporárias AWS (prefixo ASIA, STS) também bloqueiam
+r=$(new_repo r10)
+printf 'k=ASIA%s\n' "IOSFODNN7EXAMPLE" > "$r/cred.txt"
+out=$( run "$r" "$G"; echo "rc=$?" )
+if printf '%s' "$out" | grep -q 'rc=3'; then ok "credencial AWS temporária (ASIA) bloqueia"
+else ko "credencial AWS temporária (ASIA) passou (seria enviada à CLI)"; fi
+
+# (f) config do repo que existe em HEAD mas foi removida do working tree não é
+#     substituída pelas instruções globais: quem aplica a config é a CLI, a partir de HEAD.
+r=$(new_repo r11)
+printf 'instrucoes: do repo\n' > "$r/.coderabbit.yaml"
+git -C "$r" add . && git -C "$r" -c user.name=t -c user.email=t@example.invalid commit -qm cfg
+rm -f "$r/.coderabbit.yaml"                # sai do working tree, fica em HEAD
+out=$( run "$r" "$G" --scope committed --base HEAD~1; echo "rc=$?" )
+if [ -f "$STUB_ARGS" ] && ! grep -q -- '--config' "$STUB_ARGS"; then
+  ok "config em HEAD (ausente no working tree) não é sobreposta por --config global"
+else ko "config do repo em HEAD foi ignorada: passou --config global"; fi
+
 exit "$FAIL"

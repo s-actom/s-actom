@@ -20,6 +20,11 @@ sempre com `claude --debug` numa instalação nova.
 | `verification-loop` | `agents/auditoria.md` | ECC | Não |
 | `superpowers:verification-before-completion` | `agents/auditoria.md` | plugin `superpowers@superpowers-dev` | Não |
 | `automation-audit-ops`, `workspace-surface-audit` | `agents/workspace-automation-auditor.md` | ECC | Não |
+| `copywriting`, `content-strategy`, `seo`, `page-cro` | `agents/conteudo.md` | `~/.agents/skills/` (ligações externas, fora de `~/.claude`) | Não — ligar/instalar no destino |
+
+> As skills ECC não ficam em `~/.claude/skills/<nome>/` mas em `~/.claude/skills/ecc/<nome>/`.
+> O harness só varre os filhos diretos de `~/.claude/skills/`, por isso uma reinstalação do ECC
+> deixa-as invisíveis até correr `scripts/expose-ecc-skills.sh` (cria `skills/<nome> -> ecc/<nome>`).
 
 ## Revisores delegados por `agents/auditoria.md`
 
@@ -58,8 +63,19 @@ Sem esse catálogo, essas duas delegações falham (as restantes continuam a res
 ### Reinstalar `owasp-security` (não vem de plugin/marketplace)
 
 ```bash
-git clone --depth 1 https://github.com/agamm/claude-code-owasp \
-  "$HOME/.claude/skills/owasp-security"
+# O repositório pode trazer a skill na raiz ou em .claude/skills/<nome>/.
+# Clonar para uma pasta temporária e copiar o que existir evita o SKILL.md ficar num
+# caminho aninhado (ex.: skills/owasp-security/.claude/skills/owasp-security/SKILL.md).
+_tmp=$(mktemp -d) || exit 1
+git clone --depth 1 https://github.com/agamm/claude-code-owasp "$_tmp/owasp" || exit 1
+mkdir -p "$HOME/.claude/skills"
+if [ -f "$_tmp/owasp/.claude/skills/owasp-security/SKILL.md" ]; then
+  cp -R "$_tmp/owasp/.claude/skills/owasp-security" "$HOME/.claude/skills/"
+else
+  cp -R "$_tmp/owasp" "$HOME/.claude/skills/owasp-security"
+fi
+rm -rf -- "$_tmp"
+[ -f "$HOME/.claude/skills/owasp-security/SKILL.md" ] || echo "aviso: SKILL.md não ficou no destino" >&2
 ```
 
 Não está declarada em `settings.json` (`enabledPlugins`/`extraKnownMarketplaces`), por isso
