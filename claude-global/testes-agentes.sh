@@ -79,7 +79,11 @@ if [ -f "$MA" ]; then
 else ok "4) multi-agent-systems-architect ausente neste conjunto (nada a verificar)"; fi
 
 # 5) nenhum agente ATIVO recomenda comandos destrutivos sem aviso explícito
-DESTR=$(grep -rlnE 'git reset --hard|git clean -[a-z]*f|rm -rf /( |$)|--no-preserve-root' "$RAIZ/agents" 2>/dev/null || true)
+# Só os agentes desta exportação. `gsd-*` é o catálogo de terceiros (superpowers/GSD),
+# que não é exportado nem patcheado aqui: numa instalação real está em agents/ e não
+# deve fazer falhar a guarda do que é nosso.
+DESTR=$(grep -rlnE 'git reset --hard|git clean -[a-z]*f|rm -rf /( |$)|--no-preserve-root' "$RAIZ/agents" 2>/dev/null \
+        | grep -vE '/(gsd-[^/]+|agents-archive/[^/]+)\.md$' || true)
 if [ -n "$DESTR" ]; then
   # permitido apenas se o ficheiro avisar explicitamente
   for f in $DESTR; do
