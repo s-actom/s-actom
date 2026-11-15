@@ -1,0 +1,133 @@
+{
+  "v": 1,
+  "atualizado": "2026-11-15",
+  "nota": "Fonte única de autorização de modelos. Só entram aqui identificadores exatos que o proprietário aprovou; pertencer a um dos fornecedores permitidos NÃO autoriza. Adicionar/remover = editar este ficheiro (não o código).",
+  "politica": {
+    "fornecedores_permitidos": ["openai", "anthropic", "deepseek", "glm"],
+    "pesos": { "qualidade": 0.5, "fiabilidade": 0.2, "velocidade": 0.15, "custo": 0.15 },
+    "min_amostras": 3,
+    "fallback_nao_autorizado": false
+  },
+  "modelos": [
+    {
+      "id": "claude-sonnet-5-5",
+      "fornecedor": "anthropic",
+      "runtime": "claude-code",
+      "acesso": "subscricao-cli",
+      "origem": "~/.claude/settings.json:27 (model) e :723 (modelSettings)",
+      "ativo": true,
+      "autorizado": true,
+      "autorizado_por": "config-local",
+      "autorizado_em": "2026-11-15",
+      "preco": null
+    },
+    {
+      "id": "claude-haiku-5-5",
+      "fornecedor": "anthropic",
+      "runtime": "claude-code",
+      "acesso": "subscricao-cli",
+      "origem": "~/.claude/settings.json:726 (modelSettings)",
+      "ativo": true,
+      "autorizado": true,
+      "autorizado_por": "config-local",
+      "autorizado_em": "2026-11-15",
+      "preco": null
+    },
+    {
+      "id": "claude-opus-5-5",
+      "fornecedor": "anthropic",
+      "runtime": "claude-code",
+      "acesso": "subscricao-cli",
+      "origem": "~/.claude/settings.json:729 (modelSettings)",
+      "ativo": true,
+      "autorizado": true,
+      "autorizado_por": "config-local",
+      "autorizado_em": "2026-11-15",
+      "preco": null
+    },
+    {
+      "id": "claude-fable-5-2",
+      "fornecedor": "anthropic",
+      "runtime": "claude-code",
+      "acesso": "subscricao-cli",
+      "origem": "~/.claude/settings.json:732 (modelSettings)",
+      "ativo": true,
+      "autorizado": true,
+      "autorizado_por": "config-local",
+      "autorizado_em": "2026-11-15",
+      "preco": null
+    },
+    {
+      "id": "gpt-6-luna",
+      "fornecedor": "openai",
+      "runtime": "codex",
+      "acesso": "cli",
+      "origem": "~/.codex/config.toml:1 (model)",
+      "ativo": true,
+      "autorizado": true,
+      "autorizado_por": "config-local",
+      "autorizado_em": "2026-11-15",
+      "preco": null
+    },
+    {
+      "id": "gpt-6-astra",
+      "fornecedor": "openai",
+      "runtime": "codex",
+      "acesso": "cli",
+      "origem": "~/.codex/AGENTS.md:85 (model lock de delegação)",
+      "ativo": true,
+      "autorizado": true,
+      "autorizado_por": "config-local",
+      "autorizado_em": "2026-11-15",
+      "preco": null
+    },
+    {
+      "id": "deepseek-flash",
+      "fornecedor": "deepseek",
+      "runtime": "deepseek-agent",
+      "acesso": "api-key",
+      "origem": "~/.deepseek-agent/server.py:26 (MODEL, servidor MCP registado em ~/.codex/config.toml)",
+      "ativo": true,
+      "autorizado": true,
+      "autorizado_por": "config-local",
+      "autorizado_em": "2026-11-15",
+      "preco": null
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "fornecedor": "deepseek",
+      "runtime": "zcode",
+      "acesso": "api-key",
+      "origem": "~/.zcode/v2/provider_config.json (config.enabled=false)",
+      "ativo": false,
+      "autorizado": false,
+      "autorizado_por": null,
+      "autorizado_em": null,
+      "preco": null
+    },
+    {
+      "id": "GLM-5.3",
+      "fornecedor": "glm",
+      "runtime": "zcode",
+      "acesso": "subscricao",
+      "origem": "~/.zcode/v2/provider_config.json:57 (providerModelRules, enabled) e :96 (defaultModelSelection)",
+      "ativo": true,
+      "autorizado": true,
+      "autorizado_por": "config-local",
+      "autorizado_em": "2026-11-15",
+      "preco": null
+    },
+    {
+      "id": "GLM-5.3-Flash",
+      "fornecedor": "glm",
+      "runtime": "zcode",
+      "acesso": "subscricao",
+      "origem": "~/.zcode/v2/provider_config.json:64 (providerModelRules, enabled)",
+      "ativo": true,
+      "autorizado": true,
+      "autorizado_por": "config-local",
+      "autorizado_em": "2026-11-15",
+      "preco": null
+    }
+  ]
+}

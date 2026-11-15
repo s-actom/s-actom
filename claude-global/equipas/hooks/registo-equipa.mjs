@@ -6,6 +6,11 @@ import path from "node:path";
 import { ativa, lerEntrada, sessaoValida, lerSessao, guardarSessao, registar, catalogo, limpar } from "./lib/comum.mjs";
 import { etiquetasRazao } from "./lib/jev.mjs";
 
+// Dependência opcional: se o módulo não estiver instalado, a delegação continua a ser
+// registada sem o campo `modelo` (falha em aberto, como o resto dos hooks).
+let registarTurno = null;
+try { ({ registarTurno } = await import("./modelo-executado.mjs")); } catch { registarTurno = null; }
+
 // A razão em texto livre fica só no transcript local (vê-se na revisão); o registo guarda as etiquetas dela.
 export function ler(e) {
   if (e?.hook_event_name === "PostToolUse" && e.tool_name === "Skill") {
@@ -36,7 +41,21 @@ async function main() {
   if (!l) return;
   const c = classificar(l.nome, new Set(catalogo().map((x) => x.slug)));
   if (!c) return;
-  registar({ ...c, ts: new Date().toISOString(), sessao: e.session_id, via: l.via, razao_etiquetas: l.razao, ok: l.ok, subagente: l.subagente });
+  // Modelo efetivamente executado (Adaptive Model Intelligence): observação, não decisão.
+  // Falha em aberto: sem transcript legível fica `modelo:null` e a delegação continua.
+  let obs = null;
+  try {
+    if (registarTurno) {
+      obs = registarTurno({
+        sessao: e.session_id,
+        ficheiro: typeof e.transcript_path === "string" ? e.transcript_path : null,
+        estado: l.ok ? "ok" : "falhou",
+      });
+    }
+  } catch { obs = null; }
+
+  registar({ ...c, ts: new Date().toISOString(), sessao: e.session_id, via: l.via, razao_etiquetas: l.razao, ok: l.ok, subagente: l.subagente,
+    modelo: obs?.modelo ?? null, modelo_autorizado: obs?.autorizado ?? null, categoria_tarefa: obs?.categoria ?? null });
   if (c.tipo === "equipa" && l.ok && !l.subagente) {
     const s = lerSessao(e.session_id);
     s.equipa_ativa = true;
