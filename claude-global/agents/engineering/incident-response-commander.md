@@ -260,7 +260,9 @@ slis:
 
   correctness:
     description: "Proportion of requests returning correct results"
-    metric: "business_logic_errors_total / requests_total"
+    # SLI de sucesso: 1 - taxa de erro. Comparar a taxa de ERRO com o objetivo de
+    # SUCESSO (99,99%) inverteria o significado do limiar.
+    metric: "(requests_total - business_logic_errors_total) / requests_total"
     good_event: "No business logic error"
 
 slos:

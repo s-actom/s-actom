@@ -171,7 +171,10 @@ contract SecureLending {
         // dívida/garantia noutra moeda (ex.: garantia 18 casas vs dívida 6), normaliza as
         // DUAS ao mesmo número de casas antes da comparação — senão a razão sai 10^12 errada.
         // Documenta também qual é a moeda de cotação do feed.
-        return (amount * uint256(price)) / scale;
+        uint256 valor = (amount * uint256(price)) / scale;  // ainda nas casas de `amount`
+        // Normaliza para 18 casas antes de comparar com dívida/garantia de outra moeda:
+        // sem isto, 18 casas vs 6 casas dá uma razão errada por 10^12.
+        return toWad(valor, amountDecimals);               // reverte se amountDecimals > 18
     }
 }
 ```

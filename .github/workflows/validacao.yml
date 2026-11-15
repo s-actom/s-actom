@@ -72,6 +72,10 @@ jobs:
         if: hashFiles('claude-global/instalar.sh') != ''
         run: bash claude-global/teste-instalacao.sh
 
+      - name: Testes — aplicador limitado ao manifesto (bash)
+        if: hashFiles('claude-global/teste-aplicar.sh') != ''
+        run: bash claude-global/teste-aplicar.sh
+
       - name: Testes — validar.sh (bash)
         if: hashFiles('claude-global/validar.test.sh') != ''
         run: bash claude-global/validar.test.sh

@@ -316,7 +316,7 @@ Agents that process external content (web pages, user-submitted documents, email
 **Mitigations:**
 - Separate content processing from instruction processing: never concatenate external content directly into the system prompt
 - Use a "sanitizer" agent whose only job is to extract structured data from untrusted content before passing to downstream agents
-- Validate structured outputs with schema enforcement — injected instructions don't produce valid JSON
+- Validate structured outputs with schema enforcement — as a correctness gate, not as injection defense: a payload can be valid JSON and still carry instructions (see the note above)
 - Flag and quarantine any agent output that contains instruction-like language (imperative verbs + tool names)
 
 ---

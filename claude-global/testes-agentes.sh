@@ -18,7 +18,9 @@ if [ ! -f "$RAIZ/agents/security/blockchain-security-auditor.md" ] && \
 fi
 
 # 1) decimals(): dividir por decimals() em vez de 10 ** decimals()
-if grep -rn "priceFeed\.decimals()" "$RAIZ/agents" 2>/dev/null | grep -qE '/ *priceFeed\.decimals\(\)'; then
+# Apanha também a forma com cast: `/ uint256(priceFeed.decimals())`.
+if grep -rn "priceFeed\.decimals()" "$RAIZ/agents" 2>/dev/null \
+   | grep -qE '/ *priceFeed\.decimals\(\)|/ *uint256\( *priceFeed\.decimals'; then
   ko "1) divisão por priceFeed.decimals() (fator de escala errado)"
 else
   ok "1) normalização de decimais usa 10 ** decimals()"
@@ -31,8 +33,9 @@ if [ -f "$BC" ]; then
   else ok "1) sem divisão por decimals()"; fi
   grep -q "10 \*\* uint256(priceFeed.decimals())" "$BC" \
     && ok "1) o fator correto está presente" || ko "1) falta o fator 10 ** decimals()"
-  # a presença do fator não chega: a DIVISÃO tem de o usar
-  grep -qE 'return .* / *scale;' "$BC" \
+  # a presença do fator não chega: a DIVISÃO tem de o usar (em `return ... / scale` ou
+  # numa variável intermédia, como em `uint256 valor = (amount * price) / scale;`)
+  grep -qE '/ *scale' "$BC" \
     && ok "1) a divisão usa scale" || ko "1) a divisão não usa scale"
   grep -qi 'moeda de cota\|unidades' "$BC" && ok "1) unidades documentadas" || ko "1) unidades não documentadas"
 else
