@@ -102,5 +102,33 @@ aplicar >"$T/out7" 2>&1; RC=$?
 [ "$RC" -eq 2 ] && ok "7) caminho com .. rejeitado" || ko "7) aceitou caminho com .."
 [ ! -e "$T/fuga" ] && ok "7) nada escrito fora do destino" || ko "7) escreveu fora do destino"
 
+# --- 8. criação de ficheiro novo e repetição idempotente ------------------
+montar
+printf 'novo-teste\n' >"$T/pkg/equipas/hooks/novo.sh"
+printf 'equipas/hooks/novo.sh\t-\t-\t%s\n' "$(sha "$T/pkg/equipas/hooks/novo.sh")" \
+  >>"$T/pkg/docs/manifesto-correcoes.tsv"
+aplicar >"$T/out8" 2>&1; RC=$?
+[ -f "$T/dest/equipas/hooks/novo.sh" ] && ok "8) ficheiro novo criado" || ko "8) não criou o ficheiro novo"
+[ "$RC" -eq 0 ] && ok "8) sai 0" || ko "8) saiu $RC"
+# Repetição: o manifesto regenerado passa a esperar o hash corrigido (idempotência).
+awk -F'\t' 'BEGIN{OFS="\t"} /^#/{print;next} {$3=$4; print}' "$T/pkg/docs/manifesto-correcoes.tsv" >"$T/m2"
+mv "$T/m2" "$T/pkg/docs/manifesto-correcoes.tsv"
+aplicar >"$T/out8b" 2>&1; RC=$?
+grep -q "já está corrigido: equipas/hooks/novo.sh" "$T/out8b" \
+  && ok "8) repetição: ficheiro criado não é conflito" || ko "8) repetição marcou o ficheiro criado como conflito"
+[ "$RC" -eq 0 ] && ok "8) repetição sai 0" || ko "8) repetição saiu $RC"
+
+# --- 9. falha da bateria -> rollback automático só desta operação ---------
+montar
+printf '#!/usr/bin/env bash\nexit 1\n' >"$T/dest/testes-agentes.sh"
+chmod +x "$T/dest/testes-agentes.sh"
+bash "$T/pkg/aplicar.sh" --destino "$T/dest" >"$T/out9" 2>&1; RC=$?
+[ "$(sha "$T/dest/equipas/hooks/h.sh")" = "$(printf 'velho-hook\n' | shasum -a 256 | cut -d' ' -f1)" ] \
+  && ok "9) bateria falhada: ficheiro revertido" || ko "9) ficou aplicado apesar da falha"
+[ "$(sha "$T/dest/agents/security/a.md")" = "$(printf 'velho-agente\n' | shasum -a 256 | cut -d' ' -f1)" ] \
+  && ok "9) bateria falhada: segundo ficheiro revertido" || ko "9) segundo ficheiro ficou aplicado"
+grep -q "REVERTIDO" "$T/out9" && ok "9) reporta a reversão" || ko "9) não reporta a reversão"
+[ "$RC" -eq 1 ] && ok "9) sai 1" || ko "9) saiu $RC, esperado 1"
+
 echo
 if [ "$FALHAS" -eq 0 ]; then echo "TODOS OK"; exit 0; else echo "$FALHAS falha(s)"; exit 1; fi

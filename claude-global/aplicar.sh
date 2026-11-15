@@ -100,7 +100,10 @@ ORIGEM_MAU=0; N_LINHAS=0
 while IFS=$'\t' read -r rel orig esp corr; do
   case "$rel" in ''|'#'*) continue ;; esac
   [[ "$rel" == /* || "$rel" == *..* ]] && { echo "manifesto: caminho inválido: $rel" >&2; ORIGEM_MAU=1; continue; }
-  [[ "$esp" =~ ^[0-9a-f]{64}$ && "$corr" =~ ^[0-9a-f]{64}$ ]] \
+  # hash_esperado_antes pode ser "-": o manifesto espera CRIAR o ficheiro (não existir).
+  { [ "$esp" = "-" ] || [[ "$esp" =~ ^[0-9a-f]{64}$ ]]; } \
+    || { echo "manifesto: hash inválido em $rel" >&2; ORIGEM_MAU=1; continue; }
+  [[ "$corr" =~ ^[0-9a-f]{64}$ ]] \
     || { echo "manifesto: hash inválido em $rel" >&2; ORIGEM_MAU=1; continue; }
   [ "$orig" = "-" ] || [[ "$orig" =~ ^[0-9a-f]{64}$ ]] \
     || { echo "manifesto: hash_original inválido em $rel" >&2; ORIGEM_MAU=1; continue; }
@@ -134,18 +137,22 @@ while IFS=$'\t' read -r rel orig esp corr; do
   atual=$(sha "$alvo")
   if [ -z "$atual" ]; then atual="-"; fi
 
-  if [ "$orig" = "-" ] && [ "$atual" != "-" ]; then
-    diz "CONFLITO: $rel já existe no destino (o manifesto esperava criá-lo)"; CONFLITOS=$((CONFLITOS + 1)); continue
-  fi
-  if [ "$orig" != "-" ] && [ "$atual" = "-" ]; then
-    diz "CONFLITO: $rel desapareceu do destino"; CONFLITOS=$((CONFLITOS + 1)); continue
-  fi
-  if [ "$atual" != "$esp" ]; then
-    diz "CONFLITO: $rel divergiu (destino=$atual esperado=$esp); não foi tocado"
-    CONFLITOS=$((CONFLITOS + 1)); continue
-  fi
+  # Já corrigido: nada a fazer. Tem de vir ANTES das regras de existência, senão um
+  # ficheiro criado pela aplicação anterior seria marcado como conflito na repetição.
   if [ "$atual" = "$corr" ]; then
     diz "já está corrigido: $rel"; SALTADOS=$((SALTADOS + 1)); continue
+  fi
+  # A pré-condição é o hash_esperado_antes, não o hash_original: `original` é registo
+  # histórico (pode ser "-" num ficheiro que já criámos numa passagem anterior).
+  if [ "$esp" = "-" ]; then
+    if [ "$atual" != "-" ]; then
+      diz "CONFLITO: $rel já existe no destino (o manifesto esperava criá-lo)"; CONFLITOS=$((CONFLITOS + 1)); continue
+    fi
+  elif [ "$atual" = "-" ]; then
+    diz "CONFLITO: $rel desapareceu do destino"; CONFLITOS=$((CONFLITOS + 1)); continue
+  elif [ "$atual" != "$esp" ]; then
+    diz "CONFLITO: $rel divergiu (destino=$atual esperado=$esp); não foi tocado"
+    CONFLITOS=$((CONFLITOS + 1)); continue
   fi
   if command -v lsof >/dev/null 2>&1 && [ -n "$(lsof -t -- "$alvo" 2>/dev/null)" ]; then
     diz "CONFLITO: $rel está aberto por um processo; não se escreve por baixo"; CONFLITOS=$((CONFLITOS + 1)); continue
@@ -217,7 +224,14 @@ fi
 
 if [ "$FALHOU_TESTES" = 1 ]; then
   echo
-  echo "REVERTER (só esta operação): $0 --destino $DESTINO --rollback --backup $BK" >&2
+  echo "Bateria falhou: a reverter SÓ os ficheiros desta operação (backup $BK)." >&2
+  # Reutiliza o caminho de rollback já testado: só repõe o que ainda tem o hash que
+  # escrevemos, por isso não pisa alterações entretanto.
+  if bash "$RAIZ/aplicar.sh" --destino "$DESTINO" --rollback --backup "$BK"; then
+    echo "REVERTIDO: o destino ficou como antes desta operação." >&2
+  else
+    echo "ROLLBACK PARCIAL: ver as linhas acima; backup preservado em $BK" >&2
+  fi
   exit 1
 fi
 [ "$CONFLITOS" -eq 0 ] || { echo "APLICAÇÃO PARCIAL: $CONFLITOS conflito(s)." >&2; exit 1; }
