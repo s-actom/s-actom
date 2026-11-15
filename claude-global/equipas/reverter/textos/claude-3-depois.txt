@@ -1,0 +1,1 @@
+Daybreak e `/claude-security` só a pedido; os revisores de código e de segurança entram por regra (`~/.claude/equipas/seguranca.md`)

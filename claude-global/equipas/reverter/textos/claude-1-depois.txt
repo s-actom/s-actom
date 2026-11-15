@@ -1,0 +1,8 @@
+## Direção Geral — único decisor
+<!-- direcao-geral: Fase 1. Reverter: bash ~/.claude/equipas/reverter/reverter-fase-1.sh --aplicar -->
+- Quem trabalha decide-o só a skill `direcao-geral`. Em qualquer objetivo não trivial, invoca-a primeiro e segue-a. Ela escolhe entre as 15 equipas (`equipa-*`), e cada equipa traz as suas skills, agentes e MCP. O dono nunca precisa de nomear recursos.
+- Nenhuma outra regra, skill ou hook escolhe quem trabalha. `agency-commander`, `skill-router`, os coordenadores PT e as regras ECC que mandam usar agentes por iniciativa (`rules/ecc/common/agents.md`) ficam como itens das equipas, não como decisores.
+- Superpowers continua sempre ligado como método (brainstorming, plano, TDD, verificação). A escolha de skills é da Direção Geral: a regra do "1%" de `using-superpowers` não se aplica.
+- Segurança: com código ou arquitetura, segue `~/.claude/equipas/seguranca.md`. Ninguém a pode tirar.
+- Tarefas triviais (typo, pergunta rápida, 1–2 linhas): sem Direção Geral nem agentes. Subagentes nunca invocam `direcao-geral`.
+

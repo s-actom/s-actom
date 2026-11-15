@@ -1,0 +1,7 @@
+# Higiene: nada disto deve entrar no repositório (validar.sh também os recusa).
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+.bak*
+*.bak-*
